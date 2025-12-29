@@ -1,0 +1,7 @@
+hf310/
+__pycache__/
+.cache/
+.idea/
+*.pyc
+*.pyd
+*.dll
