@@ -43,7 +43,7 @@ model = get_peft_model(model, lora_config)
 # 5. 训练参数（适配低显存）
 training_args = TrainingArguments(
     output_dir="./fundus_model",
-    per_device_train_batch_size=1,  # 保守设置，避免显存溢出
+    per_device_train_batch_size=2,  # 保守设置，避免显存溢出
     gradient_accumulation_steps=4,  # 模拟大batch
     learning_rate=2e-4,
     num_train_epochs=3,  # 3轮足够
