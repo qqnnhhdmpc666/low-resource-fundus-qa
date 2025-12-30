@@ -40,17 +40,19 @@ lora_config = LoraConfig(
 )
 model = get_peft_model(model, lora_config)
 
-# 5. 训练参数（适配低显存）
+
 training_args = TrainingArguments(
     output_dir="./fundus_model",
-    per_device_train_batch_size=2,  # 保守设置，避免显存溢出
-    gradient_accumulation_steps=4,  # 模拟大batch
+    per_device_train_batch_size=8,            # 大幅提高！原来2，现在8（适配12GB显存）
+    gradient_accumulation_steps=2,            # 相应减少，保持有效batch=16
     learning_rate=2e-4,
-    num_train_epochs=3,  # 3轮足够
-    logging_steps=10,
+    num_train_epochs=3,
+    logging_steps=5,                          # 步数少点，日志更频繁
     save_strategy="epoch",
-    fp16=True,  # 混合精度，省显存
-    report_to="none"
+    fp16=True,                                # 混合精度，必开
+    report_to="none",
+    optim="paged_adamw_8bit",                 # 新增：8bit优化器，进一步省显存
+    dataloader_num_workers=4,                 # 新增：多线程加载数据，加速
 )
 
 # 6. 数据格式化（指令格式）
