@@ -1,3 +1,5 @@
+import os
+os.environ["DISABLE_BF16"] = "1"  # 强制禁用 bf16，适配 CUDA 11.8
 import torch
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, BitsAndBytesConfig
@@ -43,13 +45,14 @@ model = get_peft_model(model, lora_config)
 
 training_args = TrainingArguments(
     output_dir="./fundus_model",
-   per_device_train_batch_size=4,  #适配12g显存，调到8显存爆了，保守
-gradient_accumulation_steps=4,   #保持有效batch
+   per_device_train_batch_size=2,  #适配12g显存，调到4显存爆了，保守
+gradient_accumulation_steps=8,   #保持有效batch
     learning_rate=2e-4,
     num_train_epochs=3,
     logging_steps=5,                          # 步数少点，日志更频繁
     save_strategy="epoch",
     fp16=True,                                # 混合精度，必开
+    bf16=False,   #强制用 fp16,适配cuda11.8+3080ti版本
     report_to="none",
     optim="paged_adamw_8bit",                 # 新增：8bit优化器，进一步省显存
     dataloader_num_workers=4,                 # 新增：多线程加载数据，加速
