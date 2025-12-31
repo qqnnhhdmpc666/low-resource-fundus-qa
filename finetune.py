@@ -43,8 +43,8 @@ model = get_peft_model(model, lora_config)
 
 training_args = TrainingArguments(
     output_dir="./fundus_model",
-    per_device_train_batch_size=8,            # 大幅提高！原来2，现在8（适配12GB显存）
-    gradient_accumulation_steps=2,            # 相应减少，保持有效batch=16
+   per_device_train_batch_size=4,  #适配12g显存，调到8显存爆了，保守
+gradient_accumulation_steps=4,   #保持有效batch
     learning_rate=2e-4,
     num_train_epochs=3,
     logging_steps=5,                          # 步数少点，日志更频繁
@@ -64,10 +64,10 @@ trainer = SFTTrainer(
     model=model,
     args=training_args,
     train_dataset=dataset,
-    tokenizer=tokenizer,
+   # tokenizer=tokenizer,新版参数移除
     peft_config=lora_config,
     formatting_func=format_func,
-    max_seq_length=512
+   # max_seq_length=512，新版参数移除
 )
 
 print("开始微调，请耐心等待...")
