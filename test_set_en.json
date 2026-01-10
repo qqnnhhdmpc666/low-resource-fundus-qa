@@ -1,0 +1,122 @@
+[
+    {
+        "id": 1,
+        "question": "What should I do if my eyes feel dry after working on a computer for a long time?",
+        "reference_answer": "If your eyes feel dry after long periods of computer use, take frequent breaks and consciously blink more often to keep your eyes moist. Using artificial tears can provide temporary relief and protect the cornea from irritation. Adjust your screen brightness, contrast, and position to reduce strain, and follow the 20-20-20 rule: every 20 minutes, look at something 20 feet away for 20 seconds. Maintain proper posture and ensure adequate ambient lighting. Drinking enough water and reducing air-conditioning exposure can also help prevent dryness over time.",
+        "expected_keywords": ["dry eyes", "artificial tears", "eye strain", "20-20-20 rule", "screen brightness", "blinking", "posture", "cornea"]
+    },
+    {
+        "id": 2,
+        "question": "How often should I get an eye check-up?",
+        "reference_answer": "Most people should have a comprehensive eye exam every one to two years, but individuals with conditions such as diabetes, high myopia, or family history of glaucoma may need more frequent exams. Regular eye check-ups help detect early signs of cataracts, retinal changes, or macular degeneration. During an exam, vision acuity, intraocular pressure, and retinal health are typically assessed. Timely detection allows interventions before significant vision loss occurs. Maintaining a regular eye exam schedule is key to long-term eye health.",
+        "expected_keywords": ["eye exam", "comprehensive check-up", "glaucoma", "cataracts", "macular degeneration", "retinal health", "vision preservation", "intraocular pressure"]
+    },
+    {
+        "id": 3,
+        "question": "Can wearing glasses prevent my eyesight from getting worse?",
+        "reference_answer": "Glasses help correct your current vision and reduce eye strain, but they do not prevent natural changes in eyesight over time. They improve clarity for daily tasks and protect against fatigue but cannot halt progression of myopia or hyperopia. Regular eye exams are essential to monitor changes and update prescriptions as needed. Healthy visual habits, such as reducing screen time, proper lighting, and outdoor activities, support long-term eye health. Using glasses in combination with these habits can maintain comfort and prevent worsening eye fatigue.",
+        "expected_keywords": ["glasses", "vision correction", "eye strain", "myopia", "hyperopia", "eye exams", "visual habits", "outdoor activities"]
+    },
+    {
+        "id": 4,
+        "question": "What are the signs of cataracts?",
+        "reference_answer": "Cataracts usually develop gradually, causing cloudy or blurry vision and difficulty seeing fine details. Increased sensitivity to light, glare at night, or colors appearing faded are common symptoms. Some individuals may experience double vision or frequent changes in their glasses prescription. Early detection through regular eye exams allows for monitoring and timely intervention. Cataract surgery may be recommended when vision significantly affects daily life. Maintaining eye health and protecting eyes from UV light can help slow progression.",
+        "expected_keywords": ["cataracts", "cloudy vision", "blurry vision", "light sensitivity", "double vision", "eye exam", "surgery", "UV protection"]
+    },
+    {
+        "id": 5,
+        "question": "How can I reduce eye strain while reading?",
+        "reference_answer": "To reduce eye strain while reading, ensure your environment has adequate lighting and avoid glare from lamps or screens. Take breaks every 20–30 minutes and look at distant objects to relax your eye muscles. Adjust text size or screen settings to improve comfort and maintain a proper reading distance. Using lubricating eye drops can help with dryness during extended reading sessions. Maintaining ergonomic posture and minimizing continuous reading or screen time can prevent long-term eye fatigue.",
+        "expected_keywords": ["eye strain", "reading", "lighting", "glare", "posture", "breaks", "eye drops", "screen settings"]
+    },
+    {
+        "id": 6,
+        "question": "Can diet affect my eye health?",
+        "reference_answer": "Yes, a balanced diet rich in vitamins A, C, E, zinc, and omega-3 fatty acids supports eye health. Leafy greens, carrots, fish, nuts, and citrus fruits are particularly beneficial. Proper nutrition can reduce the risk of age-related macular degeneration and cataracts. Staying hydrated also helps prevent dry eyes. Incorporating these dietary habits along with regular eye exams contributes to long-term visual well-being.",
+        "expected_keywords": ["eye health", "vitamins A C E", "zinc", "omega-3", "macular degeneration", "cataracts", "nutrition", "hydration"]
+    },
+    {
+        "id": 7,
+        "question": "What should I do if I accidentally get dust in my eye?",
+        "reference_answer": "If dust enters your eye, avoid rubbing it as this can scratch the cornea. Gently rinse your eye with clean water or saline solution to remove the particle. Blinking several times can help flush out remaining debris. If irritation, redness, or pain persists, seek professional evaluation from an ophthalmologist. Prompt care reduces the risk of infection and corneal injury.",
+        "expected_keywords": ["dust in eye", "cornea", "rinse", "saline", "blinking", "irritation", "ophthalmologist", "infection"]
+    },
+    {
+        "id": 8,
+        "question": "Is it normal for eyes to feel tired after long phone use?",
+        "reference_answer": "Yes, prolonged phone or screen use can cause digital eye strain, resulting in tired, dry, or itchy eyes. Blinking more often and taking regular breaks can relieve symptoms. Adjusting screen brightness, contrast, and text size helps reduce strain. Following the 20-20-20 rule and maintaining proper posture are also effective. If discomfort persists, using lubricating eye drops or limiting screen time is recommended.",
+        "expected_keywords": ["digital eye strain", "screen time", "tired eyes", "blinking", "breaks", "20-20-20 rule", "eye drops", "posture"]
+    },
+    {
+        "id": 9,
+        "question": "Can wearing contact lenses cause infections?",
+        "reference_answer": "Improper use of contact lenses, such as wearing them too long or not cleaning them properly, can lead to eye infections. Always wash your hands before handling lenses and follow the care instructions. Avoid sleeping in lenses unless prescribed. Redness, pain, or blurred vision are warning signs requiring immediate consultation with an eye doctor. Proper hygiene and timely replacement of lenses are essential to prevent complications.",
+        "expected_keywords": ["contact lenses", "eye infection", "hygiene", "lens care", "redness", "pain", "ophthalmologist", "replacement"]
+    },
+    {
+        "id": 10,
+        "question": "How can I tell if I need reading glasses?",
+        "reference_answer": "Difficulty focusing on close objects, squinting, or holding reading materials farther away are signs you may need reading glasses. A comprehensive eye exam can confirm the need and provide an accurate prescription. Using appropriate lenses can reduce eye strain, headaches, and fatigue. Children or adults experiencing these symptoms should have regular eye check-ups. Early correction improves reading comfort and prevents further visual discomfort.",
+        "expected_keywords": ["reading glasses", "eye exam", "focusing difficulty", "eye strain", "headache", "prescription", "visual comfort"]
+    },
+    {
+        "id": 11,
+        "question": "Are sunglasses really necessary?",
+        "reference_answer": "Yes, sunglasses protect your eyes from harmful UV rays, which can contribute to cataracts, macular degeneration, and other eye conditions. They also reduce glare and improve comfort in bright environments. Choose sunglasses that block 100% of UVA and UVB rays. Wearing them regularly outdoors can help prevent long-term damage. Even on cloudy days, UV protection is important for maintaining healthy eyes.",
+        "expected_keywords": ["sunglasses", "UV protection", "cataracts", "macular degeneration", "glare", "eye health", "bright environments"]
+    },
+    {
+        "id": 12,
+        "question": "What is glaucoma, and how is it detected?",
+        "reference_answer": "Glaucoma is an eye condition where increased intraocular pressure damages the optic nerve, potentially leading to vision loss. It often has no early symptoms, making regular eye exams essential. Detection involves measuring eye pressure, assessing the optic nerve, and performing visual field tests. Early diagnosis allows treatment with medications, laser therapy, or surgery to slow progression. Regular monitoring is crucial to preserve vision over time.",
+        "expected_keywords": ["glaucoma", "optic nerve", "intraocular pressure", "vision loss", "eye exam", "visual field", "treatment", "monitoring"]
+    },
+    {
+        "id": 13,
+        "question": "Can stress affect my eyesight?",
+        "reference_answer": "Stress can cause temporary eye strain, blurred vision, or dry eyes, but it typically does not cause permanent damage. Relaxation techniques, adequate sleep, and reducing screen time can help alleviate symptoms. Chronic stress may worsen underlying eye conditions indirectly. Maintaining healthy lifestyle habits is important for overall eye and body health. Consulting a professional is advised if visual problems persist under stress.",
+        "expected_keywords": ["stress", "eye strain", "blurred vision", "dry eyes", "relaxation", "sleep", "screen time", "eye health"]
+    },
+    {
+        "id": 14,
+        "question": "How do I know if my child needs an eye exam?",
+        "reference_answer": "Children may need an eye exam if they frequently squint, tilt their head, or struggle with reading. Complaints of headaches or eye discomfort are also indicators. Early detection of vision problems is important for learning and development. Pediatric eye exams typically assess visual acuity, eye alignment, and refractive errors. Regular check-ups help prevent long-term visual impairment and ensure proper eye health.",
+        "expected_keywords": ["children", "eye exam", "squinting", "head tilt", "reading difficulty", "headache", "visual acuity", "refractive error"]
+    },
+    {
+        "id": 15,
+        "question": "Is it safe to wear makeup near the eyes?",
+        "reference_answer": "Wearing makeup near the eyes is generally safe if products are clean and removed before sleeping. Avoid sharing makeup and replace products regularly to reduce infection risk. Pay attention to irritation or allergic reactions. Eye-safe formulations are preferred. Proper hygiene and careful removal prevent complications like conjunctivitis or styes.",
+        "expected_keywords": ["eye makeup", "hygiene", "infection", "irritation", "allergic reaction", "conjunctivitis", "styes"]
+    },
+    {
+        "id": 16,
+        "question": "Can eye exercises improve vision?",
+        "reference_answer": "Eye exercises may help reduce eye strain and improve comfort, especially during prolonged reading or screen use. However, they do not correct refractive errors like myopia, hyperopia, or astigmatism. Exercises can relax the eye muscles and promote better focusing ability. Incorporating short breaks and visual relaxation techniques is recommended. Consistent practice may alleviate fatigue but will not replace corrective lenses.",
+        "expected_keywords": ["eye exercises", "eye strain", "vision comfort", "refractive error", "myopia", "hyperopia", "focusing", "fatigue"]
+    },
+    {
+        "id": 17,
+        "question": "How should I care for my eyes during allergy season?",
+        "reference_answer": "During allergy season, avoid rubbing your eyes, which can worsen irritation and inflammation. Use antihistamine eye drops or cold compresses if needed. Keep windows closed to reduce pollen exposure and wash hands frequently. Identifying and minimizing triggers helps prevent symptoms. If persistent redness, itching, or swelling occurs, consult an eye care professional for proper management.",
+        "expected_keywords": ["allergies", "eye irritation", "antihistamine", "pollen", "redness", "itching", "swelling", "eye care professional"]
+    },
+    {
+        "id": 18,
+        "question": "What should I do if I see flashes of light in my vision?",
+        "reference_answer": "Seeing flashes of light can indicate a serious retinal problem, such as retinal tear or detachment. Immediate consultation with an ophthalmologist is essential. Avoid rubbing the eyes and minimize physical strain until evaluated. Prompt diagnosis and treatment can prevent permanent vision loss. Regular monitoring and following medical advice are critical for safety.",
+        "expected_keywords": ["flashes of light", "retinal tear", "retinal detachment", "ophthalmologist", "vision loss", "prompt treatment", "monitoring"]
+    },
+    {
+        "id": 19,
+        "question": "Can sleeping well help my eye health?",
+        "reference_answer": "Adequate sleep helps reduce eye strain, dryness, and dark circles, while supporting overall eye function. Poor sleep may worsen visual fatigue and impact concentration. Maintaining a consistent sleep schedule and quality rest is beneficial for long-term eye health. Combining proper sleep with regular eye exams and healthy habits ensures better vision. Sufficient rest also aids recovery from eye fatigue caused by prolonged screen or reading activities.",
+        "expected_keywords": ["sleep", "eye health", "eye strain", "dryness", "dark circles", "vision", "eye fatigue", "rest"]
+    },
+    {
+        "id": 20,
+        "question": "What can I do to prevent myopia from worsening?",
+        "reference_answer": "To prevent myopia progression, spend time outdoors regularly as natural light can slow eye elongation. Limit continuous near work, such as reading or screen time, and take regular visual breaks. Children may benefit from low-dose atropine or orthokeratology under ophthalmologist supervision. Ensure proper lighting while studying and maintain ergonomic posture. Regular eye exams help monitor changes and adjust interventions as needed to protect long-term vision.",
+        "expected_keywords": ["myopia", "prevention", "outdoors", "near work", "screen time", "atropine", "orthokeratology", "eye exam"]
+    }
+]

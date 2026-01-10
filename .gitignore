@@ -1,0 +1,42 @@
+# =========================
+# Python cache
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+
+# =========================
+# Virtual environment
+# =========================
+hf310/
+venv/
+.env/
+
+# =========================
+# Models / LoRA / FAISS
+# =========================
+fundus_model/
+fundus_lora/
+fundus_faiss/
+*.pt
+*.bin
+*.safetensors
+*.tar.gz
+
+# =========================
+# Logs / Outputs / Results
+# =========================
+eval_baseline.json
+*.log
+
+# =========================
+# Backup & Temp
+# =========================
+*.bak
+'=*'
+
+# =========================
+# OS / IDE
+# =========================
+.DS_Store
+Thumbs.db

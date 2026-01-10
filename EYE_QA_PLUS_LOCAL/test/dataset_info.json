@@ -1,0 +1,60 @@
+{
+  "builder_name": "parquet",
+  "citation": "",
+  "config_name": "default",
+  "dataset_name": "eye-qa-plus",
+  "dataset_size": 46791507,
+  "description": "",
+  "download_checksums": {
+    "hf://datasets/QIAIUNCC/EYE-QA-PLUS@55abe77a33bde8b2adb893e1c20c4128f2e60b29/data/train-00000-of-00001.parquet": {
+      "num_bytes": 20372300,
+      "checksum": null
+    },
+    "hf://datasets/QIAIUNCC/EYE-QA-PLUS@55abe77a33bde8b2adb893e1c20c4128f2e60b29/data/test-00000-of-00001.parquet": {
+      "num_bytes": 3324850,
+      "checksum": null
+    }
+  },
+  "download_size": 23697150,
+  "features": {
+    "input": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "output": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "instruction": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "source": {
+      "dtype": "string",
+      "_type": "Value"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 70488657,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 40227371,
+      "num_examples": 28843,
+      "dataset_name": "eye-qa-plus"
+    },
+    "test": {
+      "name": "test",
+      "num_bytes": 6564136,
+      "num_examples": 4691,
+      "dataset_name": "eye-qa-plus"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "summary": {
+    "keyword_coverage": 0.0,
+    "rouge_l": 0,
+    "bert_f1": 0.0,
+    "response_time": 280.5077276945114
+  },
+  "details": [
+    {
+      "question": "高度近视会引起视网膜脱离吗？",
+      "system_answer": ""
+    },
+    {
+      "question": "糖尿病会引起眼底出血吗？",
+      "system_answer": ""
+    },
+    {
+      "question": "干眼症怎么治疗？",
+      "system_answer": ""
+    },
+    {
+      "question": "飞蚊症突然多了怎么办？",
+      "system_answer": ""
+    },
+    {
+      "question": "高度近视日常要注意什么？",
+      "system_answer": ""
+    },
+    {
+      "question": "孩子近视加深快该怎么办？",
+      "system_answer": ""
+    },
+    {
+      "question": "眼底激光后要注意什么？",
+      "system_answer": ""
+    },
+    {
+      "question": "白内障手术后视力又模糊了怎么办？",
+      "system_answer": ""
+    },
+    {
+      "question": "孕妇高度近视能顺产吗？",
+      "system_answer": ""
+    },
+    {
+      "question": "视疲劳怎么缓解？",
+      "system_answer": ""
+    },
+    {
+      "question": "眼底照片里有黄色斑点是什么意思？",
+      "system_answer": ""
+    },
+    {
+      "question": "高度近视需要多久检查一次眼底？",
+      "system_answer": ""
+    },
+    {
+      "question": "视盘边界不清是什么问题？",
+      "system_answer": ""
+    },
+    {
+      "question": "近视眼底会出现什么变化？",
+      "system_answer": ""
+    },
+    {
+      "question": "糖尿病眼底病变怎么预防？",
+      "system_answer": ""
+    },
+    {
+      "question": "玻璃体出血怎么办？",
+      "system_answer": ""
+    },
+    {
+      "question": "高度近视可以做激光近视手术吗？",
+      "system_answer": ""
+    },
+    {
+      "question": "儿童飞蚊症严重吗？",
+      "system_answer": ""
+    },
+    {
+      "question": "眼底出血会失明吗？",
+      "system_answer": ""
+    },
+    {
+      "question": "视网膜静脉阻塞怎么治疗？",
+      "system_answer": ""
+    }
+  ]
+}
