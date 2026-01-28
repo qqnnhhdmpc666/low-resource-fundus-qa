@@ -43,7 +43,7 @@ class LocalTranslator:
         inputs = self.zh_en_tokenizer(
             text, return_tensors="pt", truncation=True
         ).to(self.device)
-        outputs = self.zh_en_model.generate(**inputs, max_new_tokens=256, num_beams=4)
+        outputs = self.zh_en_model.generate(**inputs, max_new_tokens=256, num_beams=1)  # 使用贪心搜索提高速度
         return self.zh_en_tokenizer.decode(outputs[0], skip_special_tokens=True)
 
     @torch.inference_mode()
@@ -51,5 +51,5 @@ class LocalTranslator:
         inputs = self.en_zh_tokenizer(
             text, return_tensors="pt", truncation=True
         ).to(self.device)
-        outputs = self.en_zh_model.generate(**inputs, max_new_tokens=256, num_beams=4)
+        outputs = self.en_zh_model.generate(**inputs, max_new_tokens=256, num_beams=1)  # 使用贪心搜索提高速度
         return self.en_zh_tokenizer.decode(outputs[0], skip_special_tokens=True)

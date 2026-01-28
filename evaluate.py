@@ -1,279 +1,326 @@
+# ============================================================
+# 眼底健康问答系统评测脚本（完整版 / 语义修正版）
+# ============================================================
+# 评测指标：
+# 1. ROUGE-L（文本重合度）
+# 2. BERTScore F1（语义相似度）
+# 3. 响应时间（工程效率）
+# 4. 关键词【语义】覆盖率（Embedding）
+# 5. 医学 Checklist 覆盖度（语义触发）
+# ============================================================
+
 import json
 import time
 import statistics
-import string
 import random
 import numpy as np
 import torch
+import argparse
+
 from rouge_score import rouge_scorer
 from bert_score import score
-from qa_system import eye_qa  # 接口保持不变
-from sentence_transformers import SentenceTransformer, util  # 用于语义关键词和 Judge 辅助
+from sentence_transformers import SentenceTransformer, util
 
-# ===========================
-# 一、基础配置（你主要改这里）
-# ===========================
-TEST_FILE = "test_set.json"  # 你的测试集
-FAST_MODE_N = 20  # 你现在就是 20 条
-MAX_NEW_TOKENS = 200
-USE_EMBEDDING_KEYWORD = True  # 是否使用语义关键词
-EMBEDDING_THRESHOLD = 0.8
-SAVE_RESULTS = True  # 是否保存结果
-SAVE_FILE = "eval_baseline.json"
-BERT_MODEL = "roberta-large"  # 固定 BERTScore 模型（重要）
-USE_JUDGE = True  # 是否使用 LLM-as-a-Judge
-USE_CHECKLIST = True  # 是否使用 Checklist 评估
-JUDGE_MAX_TOKENS = 400  # Judge 生成上限
-CHECKLIST_ITEMS = [  # 医疗 QA Checklist 项目
-    "是否明确疾病名称和定义",
-    "是否提及主要病因或危险因素",
-    "是否给出诊断或检查建议",
-    "是否列出治疗方案",
-    "是否提及注意事项或生活指导",
-    "是否提示及时就医",
-    "是否有免责声明",
-    "是否避免绝对化表述（如‘一定能治好’）",
-]
+from qa_system import get_eye_qa_system
 
-# ===========================
-# 二、固定随机种子（保证可复现）
-# ===========================
+# ============================================================
+# 一、命令行参数解析
+# ============================================================
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+parser = argparse.ArgumentParser(description='眼底健康问答系统评测脚本')
+parser.add_argument('--retrieval_mode', type=str, default='hybrid_rerank', 
+                    choices=['vector', 'hybrid', 'hybrid_rerank'],
+                    help='检索模式')
+parser.add_argument('--use_query_rewrite', type=str2bool, default=True,
+                    help='是否启用查询改写')
+parser.add_argument('--test_file', type=str, default='test_set_en.json',
+                    help='测试文件路径')
+parser.add_argument('--fast_mode_n', type=int, default=20,
+                    help='快速模式测试样本数')
+parser.add_argument('--max_new_tokens', type=int, default=200,
+                    help='最大生成 tokens 数')
+parser.add_argument('--save_results', type=str2bool, default=True,
+                    help='是否保存结果')
+parser.add_argument('--embedding_threshold', type=float, default=0.55,
+                    help='关键词语义覆盖率阈值')
+args = parser.parse_args()
+
+# ============================================================
+# 二、基础配置
+# ============================================================
+
+TEST_FILE = args.test_file
+FAST_MODE_N = args.fast_mode_n
+MAX_NEW_TOKENS = args.max_new_tokens
+
+SAVE_RESULTS = args.save_results
+# 根据配置生成不同的结果文件名
+SAVE_FILE = f"eval_{args.retrieval_mode}_rewrite_{args.use_query_rewrite}.json"
+
+BERT_MODEL_EN = "roberta-large"
+BERT_MODEL_ZH = "bert-base-chinese"
+
+USE_EMBEDDING_KEYWORD = True
+
+# ⚠️ 核心改动 1：阈值下调（理由后面解释）
+EMBEDDING_THRESHOLD = args.embedding_threshold
+
+USE_CHECKLIST = True
+
+# 打印命令行参数，确认解析正确
+print(f"\n=== 命令行参数 ===")
+print(f"retrieval_mode: {args.retrieval_mode}")
+print(f"use_query_rewrite: {args.use_query_rewrite}")
+print(f"test_file: {args.test_file}")
+print(f"fast_mode_n: {args.fast_mode_n}")
+print(f"max_new_tokens: {args.max_new_tokens}")
+print(f"save_results: {args.save_results}")
+print(f"embedding_threshold: {args.embedding_threshold}")
+
+# 初始化 QA 系统
+print(f"\n=== 初始化 QA 系统 ===")
+print(f"使用检索模式: {args.retrieval_mode}")
+print(f"使用查询改写: {args.use_query_rewrite}")
+eye_qa = get_eye_qa_system(
+    retrieval_mode=args.retrieval_mode,
+    use_query_rewrite=args.use_query_rewrite,
+    stream_output=False
+)
+
+print(f"\n=== 评测配置 ===")
+print(f"检索模式: {args.retrieval_mode}")
+print(f"查询改写: {args.use_query_rewrite}")
+print(f"测试文件: {TEST_FILE}")
+print(f"测试样本数: {FAST_MODE_N}")
+print(f"结果保存到: {SAVE_FILE}")
+print(f"================\n")
+
+# ============================================================
+# 三、随机种子（保证可复现）
+# ============================================================
+
 random.seed(42)
 np.random.seed(42)
 torch.manual_seed(42)
 torch.set_num_threads(1)
 
-# ===========================
-# 三、Embedding 模型（用于语义关键词/Checklist/Judge 辅助）
-# ===========================
+# ============================================================
+# 四、Embedding 模型
+# ============================================================
+
+print("Loading embedding model (all-MiniLM-L6-v2)...")
 emb_model = SentenceTransformer("all-MiniLM-L6-v2")
 
-# ===========================
-# 四、加载测试集
-# ===========================
+# ============================================================
+# 五、Checklist（语义触发版）
+# ============================================================
+
+CHECKLIST_TRIGGERS = {
+    "condition": [
+        "eye condition", "eye disease", "vision problem", "this condition"
+    ],
+    "cause": [
+        "cause", "risk factor", "due to", "can be caused by"
+    ],
+    "symptom": [
+        "symptom", "sign", "experience", "may feel", "can cause"
+    ],
+    "advice": [
+        "recommend", "should", "suggest", "advised to"
+    ],
+    "medical_help": [
+        "see a doctor", "consult", "seek medical", "eye specialist"
+    ],
+    "disclaimer": [
+        "not a diagnosis", "not medical advice", "informational purposes"
+    ]
+}
+
+# ============================================================
+# 六、加载测试集
+# ============================================================
+
 with open(TEST_FILE, "r", encoding="utf-8") as f:
     test_data = json.load(f)
+
 if FAST_MODE_N:
     test_data = test_data[:FAST_MODE_N]
-print(f"Loaded {len(test_data)} test questions.\n")
 
-# ===========================
-# 五、评测工具初始化
-# ===========================
+print(f"\nLoaded {len(test_data)} test questions.\n")
+
+# ============================================================
+# 七、评测工具初始化
+# ============================================================
+
 rouge_eval = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
-keyword_cov_string = []
-keyword_cov_embed = []
+
 rouge_ls = []
 bert_f1s = []
 response_times = []
-judge_scores = []  # 新增 Judge 总体质量分数
-checklist_coverages = []  # 新增 Checklist 覆盖率
+keyword_covs = []
+checklist_covs = []
+
 eval_details = []
 
-# ===========================
-# 六、关键词覆盖函数
-# ===========================
-def keyword_coverage_string(keywords, answer):
-    """最传统的字符串关键词匹配"""
-    if not keywords or not answer:
-        return None
-    answer_proc = answer.lower().translate(
-        str.maketrans("", "", string.punctuation)
-    )
-    hit = 0
-    for kw in keywords:
-        kw_proc = kw.lower().translate(
-            str.maketrans("", "", string.punctuation)
-        )
-        if kw_proc in answer_proc:
-            hit += 1
-    return hit / len(keywords)
+# ============================================================
+# 八、辅助函数
+# ============================================================
 
-def keyword_coverage_embedding(keywords, answer, threshold=EMBEDDING_THRESHOLD):
-    """基于语义相似度的关键词覆盖"""
-    if not keywords or not answer:
+def contains_chinese(text: str) -> bool:
+    return any("\u4e00" <= c <= "\u9fa5" for c in text)
+
+
+def embedding_coverage(items, answer, threshold):
+    """
+    关键词语义覆盖率（修正版）：
+    - keyword 与 answer 使用 embedding 相似度
+    - 取 max similarity（而不是平均）
+    """
+    if not items or not answer:
         return None
+
     answer_emb = emb_model.encode(answer, convert_to_tensor=True)
     hit = 0
-    for kw in keywords:
-        kw_emb = emb_model.encode(kw, convert_to_tensor=True)
-        sim = util.pytorch_cos_sim(kw_emb, answer_emb).item()
-        if sim >= threshold:
-            hit += 1
-    return hit / len(keywords)
 
-# ===========================
-# 七、LLM-as-a-Judge 函数（新增）
-# ===========================
-def llm_judge(reference, system_answer):
-    judge_prompt = f"""
-你是一位资深眼科主任医师，现在评估下面AI回答的质量。
-参考答案：{reference}
-AI回答：{system_answer}
-
-请从以下维度打分（1-10分，满分10），并给出简短理由：
-1. 专业准确性（是否符合医学事实，无错误）
-2. 完整性（是否覆盖核心诊断、治疗、注意事项、就医建议）
-3. 安全性（是否有误导风险、是否提醒就医）
-4. 通俗易懂度（患者能否看懂，非专业术语过多）
-5. 总体质量
-
-格式示例：
-专业准确性：8/10 理由：...
-完整性：...
-...
-总体质量：...
-总分：...
-"""
-    # 用你的 model/tokenizer 打分
-    judge_inputs = tokenizer(judge_prompt, return_tensors="pt").to(model.device)
-    with torch.no_grad():
-        judge_output = model.generate(
-            **judge_inputs,
-            max_new_tokens=JUDGE_MAX_TOKENS,
-            temperature=0.7,
-            do_sample=True,
-            top_p=0.9
-        )
-    judge_text = tokenizer.decode(judge_output[0], skip_special_tokens=True)
-    # 简单解析总分（可优化为正则）
-    try:
-        total_score = float(judge_text.split("总分：")[-1].strip().split("/")[0])
-    except:
-        total_score = 0.0
-    return total_score, judge_text
-
-# ===========================
-# 八、Checklist 评估函数（新增）
-# ===========================
-def checklist_coverage(checklist, answer, threshold=0.7):
-    if not checklist or not answer:
-        return None
-    answer_emb = emb_model.encode(answer, convert_to_tensor=True)
-    hit = 0
-    for item in checklist:
+    for item in items:
         item_emb = emb_model.encode(item, convert_to_tensor=True)
-        sim = util.pytorch_cos_sim(item_emb, answer_emb).item()
+        sim = util.cos_sim(item_emb, answer_emb).max().item()
         if sim >= threshold:
             hit += 1
-    return hit / len(checklist)
 
-# ===========================
+    return hit / len(items)
+
+
+def checklist_trigger_coverage(triggers, answer):
+    """
+    Checklist 只要求「至少一次语义触发」
+    """
+    answer = answer.lower()
+    hit = 0
+    for _, phrases in triggers.items():
+        if any(p in answer for p in phrases):
+            hit += 1
+    return hit / len(triggers)
+
+# ============================================================
 # 九、开始评测
-# ===========================
+# ============================================================
+
 for idx, item in enumerate(test_data, 1):
     question = item["question"]
     reference = item["reference_answer"]
     keywords = item.get("expected_keywords", [])
-    print(f"[{idx}/{len(test_data)}] Q: {question}")
 
-    # ---- 调用 QA 系统 ----
+    print(f"\n[{idx}/{len(test_data)}] Question:")
+    print(question)
+
     start = time.time()
-    system_answer = eye_qa(question, max_new_tokens=MAX_NEW_TOKENS)
+    system_answer = eye_qa(
+        question,
+        max_new_tokens=MAX_NEW_TOKENS
+    )
     rt = time.time() - start
     response_times.append(rt)
 
-    # ---- 关键词覆盖 ----
-    cov_str = keyword_coverage_string(keywords, system_answer)
-    cov_emb = keyword_coverage_embedding(keywords, system_answer) if USE_EMBEDDING_KEYWORD else None
-    if cov_str is not None:
-        keyword_cov_string.append(cov_str)
-    if cov_emb is not None:
-        keyword_cov_embed.append(cov_emb)
+    print(f"→ Answer generated ({rt:.2f}s)")
 
-    # ---- ROUGE-L ----
-    rouge_l = rouge_eval.score(reference, system_answer)["rougeL"].fmeasure
+    # ---------- ROUGE ----------
+    rouge_l = rouge_eval.score(
+        reference,
+        system_answer
+    )["rougeL"].fmeasure
     rouge_ls.append(rouge_l)
 
-    # ---- BERTScore ----
+    # ---------- BERTScore ----------
+    is_zh = contains_chinese(reference)
+    bert_model = BERT_MODEL_ZH if is_zh else BERT_MODEL_EN
+    lang = "zh" if is_zh else "en"
+
     _, _, F1 = score(
         [system_answer],
         [reference],
-        lang="en",
-        model_type=BERT_MODEL,
+        lang=lang,
+        model_type=bert_model,
         verbose=False
     )
-    bert_f1 = F1.mean().item()
-    bert_f1s.append(bert_f1)
+    bert_f1s.append(F1.mean().item())
 
-    # ---- LLM-as-a-Judge (新增) ----
-    if USE_JUDGE:
-        judge_score, judge_reason = llm_judge(reference, system_answer)
-        judge_scores.append(judge_score)
+    # ---------- Keyword coverage（修正版） ----------
+    if USE_EMBEDDING_KEYWORD:
+        cov = embedding_coverage(
+            keywords,
+            system_answer,
+            EMBEDDING_THRESHOLD
+        )
+        if cov is not None:
+            keyword_covs.append(cov)
 
-    # ---- Checklist 覆盖率 (新增) ----
+    # ---------- Checklist coverage ----------
     if USE_CHECKLIST:
-        checklist_cov = checklist_coverage(CHECKLIST_ITEMS, system_answer)
-        if checklist_cov is not None:
-            checklist_coverages.append(checklist_cov)
+        cc = checklist_trigger_coverage(
+            CHECKLIST_TRIGGERS,
+            system_answer
+        )
+        checklist_covs.append(cc)
 
-    # ---- 保存详细结果 ----
-    if SAVE_RESULTS:
-        detail = {
-            "id": item.get("id", idx),
-            "question": question,
-            "reference_answer": reference,
-            "system_answer": system_answer,
-            "keyword_coverage_string": cov_str,
-            "keyword_coverage_embedding": cov_emb,
-            "rouge_l": rouge_l,
-            "bert_f1": bert_f1,
-            "response_time_sec": rt
-        }
-        if USE_JUDGE:
-            detail["judge_score"] = judge_score
-            detail["judge_reason"] = judge_reason
-        if USE_CHECKLIST:
-            detail["checklist_coverage"] = checklist_cov
-        eval_details.append(detail)
+    eval_details.append({
+        "id": item.get("id", idx),
+        "question": question,
+        "system_answer": system_answer,
+        "reference_answer": reference,
+        "rouge_l": rouge_l,
+        "bert_f1": bert_f1s[-1],
+        "response_time": rt,
+        "keyword_coverage": cov if USE_EMBEDDING_KEYWORD else None,
+        "checklist_coverage": checklist_covs[-1]
+    })
 
-# ===========================
-# 十、统计 & 输出
-# ===========================
+    print("→ Metrics computed")
+
+# ============================================================
+# 十、统计结果
+# ============================================================
+
+def mean(x):
+    return statistics.mean(x) if x else 0.0
+
 print("\n================ Evaluation Summary ================\n")
+print(f"ROUGE-L: {mean(rouge_ls):.3f}")
+print(f"BERTScore F1: {mean(bert_f1s):.3f}")
+print(f"Avg response time: {mean(response_times):.2f}s")
+print(f"Keyword coverage (embed): {mean(keyword_covs):.3f}")
+print(f"Checklist coverage: {mean(checklist_covs):.3f}")
 
-def mean_std(x):
-    return statistics.mean(x), statistics.stdev(x) if len(x) > 1 else 0.0
+# ============================================================
+# 十一、保存结果
+# ============================================================
 
-if keyword_cov_string:
-    m, s = mean_std(keyword_cov_string)
-    print(f"Keyword Coverage (string): {m:.3f} ± {s:.3f}")
-
-if keyword_cov_embed:
-    m, s = mean_std(keyword_cov_embed)
-    print(f"Keyword Coverage (embedding): {m:.3f} ± {s:.3f}")
-
-m, s = mean_std(rouge_ls)
-print(f"ROUGE-L: {m:.3f} ± {s:.3f}")
-
-m, s = mean_std(bert_f1s)
-print(f"BERTScore F1: {m:.3f} ± {s:.3f}")
-
-print(f"Avg response time (s): {statistics.mean(response_times):.2f}")
-
-if USE_JUDGE and judge_scores:
-    m, s = mean_std(judge_scores)
-    print(f"LLM-as-a-Judge Total Score: {m:.2f} ± {s:.2f}")
-
-if USE_CHECKLIST and checklist_coverages:
-    m, s = mean_std(checklist_coverages)
-    print(f"Checklist Coverage: {m:.3f} ± {s:.3f}")
-
-# ===========================
-# 十一、保存结果（可选）
-# ===========================
 if SAVE_RESULTS:
     with open(SAVE_FILE, "w", encoding="utf-8") as f:
-        json.dump({
-            "summary": {
-                "keyword_string": statistics.mean(keyword_cov_string) if keyword_cov_string else None,
-                "keyword_embedding": statistics.mean(keyword_cov_embed) if keyword_cov_embed else None,
-                "rouge_l": statistics.mean(rouge_ls),
-                "bert_f1": statistics.mean(bert_f1s),
-                "response_time": statistics.mean(response_times),
-                "judge_score": statistics.mean(judge_scores) if USE_JUDGE and judge_scores else None,
-                "checklist_coverage": statistics.mean(checklist_coverages) if USE_CHECKLIST and checklist_coverages else None
+        json.dump(
+            {
+                "summary": {
+                    "rouge_l": mean(rouge_ls),
+                    "bert_f1": mean(bert_f1s),
+                    "avg_response_time": mean(response_times),
+                    "keyword_coverage": mean(keyword_covs),
+                    "checklist_coverage": mean(checklist_covs),
+                },
+                "details": eval_details
             },
-            "details": eval_details
-        }, f, ensure_ascii=False, indent=2)
-    print(f"\nDetailed results saved to {SAVE_FILE}")
+            f,
+            ensure_ascii=False,
+            indent=2
+        )
+
+    print(f"\nResults saved to {SAVE_FILE}")

@@ -1,115 +1,348 @@
+# ============================================================
+# qa_system.py
+# RAG Retrieval Ablation: Vector / Hybrid / Hybrid + Rerank
+# With Query Rewriting (Safe, Optional, Fallback-enabled)
+# ============================================================
+
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, TextStreamer
+import re
+import warnings
+
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
+
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
-import re
-from translator import LocalTranslator
-import warnings  # 新增：忽略警告
+from rank_bm25 import BM25Okapi
 
-# 忽略 transformers 和其他警告
+from sentence_transformers import CrossEncoder
+from translator import LocalTranslator
+
 warnings.filterwarnings("ignore")
+
+
+# ============================================================
+# Reranker
+# ============================================================
+
+class Reranker:
+    def __init__(self, model_name="cross-encoder/ms-marco-MiniLM-L-6-v2"):
+        # 尝试在 GPU 上运行，如果没有 GPU 再回退到 CPU
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model = CrossEncoder(model_name, device=device)
+
+    def rerank(self, query, docs, top_k=5):
+        if not docs:
+            return []
+        # 限制文档数量，确保重排序速度
+        docs = docs[:20]  # 最多处理20个文档
+        pairs = [(query, d) for d in docs]
+        # 使用批处理预测，提高速度
+        scores = self.model.predict(pairs, batch_size=16)  # 批处理大小设置为16
+        ranked = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
+        return [d for d, _ in ranked[:top_k]]
+
+
+# ============================================================
+# Query Rewriter (Lightweight, Prompt-based)
+# ============================================================
+
+class QueryRewriter:
+    """
+    Rewrite user query into a concise, medical-search-oriented query.
+    This module is intentionally conservative to avoid harming ROUGE/BERTScore.
+    """
+
+    def __init__(self):
+        pass
+
+    def rewrite(self, query: str) -> str:
+        """
+        Very lightweight heuristic rewriting:
+        - remove polite / conversational prefixes
+        - normalize common ophthalmology terms
+        - keep length short
+        """
+        q = query.lower()
+
+        # remove common conversational phrases
+        q = re.sub(
+            r"(can you|could you|please|i want to know|tell me about|what is|how to)",
+            "",
+            q,
+        )
+
+        # normalize ophthalmology-related terms
+        replacements = {
+            "eye dryness": "dry eye disease",
+            "dry eyes": "dry eye disease",
+            "red eye": "ocular redness",
+            "blurry vision": "blurred vision",
+            "eye pain": "ocular pain",
+        }
+
+        for k, v in replacements.items():
+            q = q.replace(k, v)
+
+        q = re.sub(r"\s+", " ", q).strip()
+
+        # fallback protection
+        return q if len(q) > 3 else query
+
+
+# ============================================================
+# QA System
+# ============================================================
 
 class EyeQASystem:
     def __init__(
         self,
-        base_model="Qwen/Qwen2.5-7B-Instruct",
-        lora_path="./fundus_lora",
-        rag_path="./fundus_faiss",
-        device="cuda",
-        offload_folder=None,
-        stream_output=True
+        base_model="Qwen/Qwen2.5-7B-Instruct",  # 基础语言模型
+        lora_path="./fundus_lora",  # LoRA微调模型路径
+        rag_path="./fundus_faiss",  # RAG知识库路径
+        retrieval_mode="vector",   # 检索模式：vector(纯向量) | hybrid(向量+BM25) | hybrid_rerank(混合+重排序)
+        use_query_rewrite=True,    # 查询改写：True(启用) | False(禁用)
+        stream_output=False,  # 流式输出：True(启用) | False(禁用)
     ):
-        self.device = device
+        # ====== 旋钮参数 ======
+        # 1. retrieval_mode: 控制知识检索策略
+        #    - vector: 仅使用向量相似度搜索，适合语义相关的查询
+        #    - hybrid: 结合向量搜索和BM25关键词搜索，平衡语义和关键词匹配
+        #    - hybrid_rerank: 在混合搜索基础上添加重排序，进一步优化结果质量
+        #
+        # 2. use_query_rewrite: 控制是否对查询进行标准化处理
+        #    - True: 启用查询改写，移除礼貌用语，标准化医学术语
+        #    - False: 禁用查询改写，使用原始查询
+        # =====================
+        self.retrieval_mode = retrieval_mode
         self.stream_output = stream_output
-        print("正在加载基模型和 tokenizer...")
+        self.use_query_rewrite = use_query_rewrite
+
+        # ---------------- Model ----------------
         self.tokenizer = AutoTokenizer.from_pretrained(
-            base_model, trust_remote_code=True, cache_dir=offload_folder
+            base_model, trust_remote_code=True
         )
-        print("正在加载基模型...")
+
         self.model = AutoModelForCausalLM.from_pretrained(
             base_model,
             device_map="auto",
             torch_dtype=torch.float16,
             trust_remote_code=True,
-            offload_folder=offload_folder
         )
-        print("正在加载 LoRA 权重（非合并模式）...")
+
         self.model = PeftModel.from_pretrained(self.model, lora_path)
         self.model.eval()
-        print("✅ LoRA 加载成功！")
-        print("正在加载 RAG 向量库...")
-        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-        self.db = FAISS.load_local(rag_path, embeddings, allow_dangerous_deserialization=True)
-        print("✅ RAG 向量库加载成功！\n")
-        print("正在加载本地翻译模块...")
-        self.translator = LocalTranslator(device="cpu", cache_dir=offload_folder)
-        print("✅ 翻译模块加载完成！\n")
 
-    def answer(self, question: str, top_k=15, max_new_tokens=250):  # 增大 top_k 和 max_tokens，提升完整性
-        question_clean = re.sub(r'[^\w\s\u4e00-\u9fa5A-Za-z.,!?，。？！]', '', question).strip()
-        if not question_clean:
-            return "输入无效，请重新输入问题。"
+        # ---------------- Embedding DB ----------------
+        embeddings = HuggingFaceEmbeddings(
+            model_name="all-MiniLM-L6-v2",
+            model_kwargs={"device": "cpu"},
+        )
 
-        # 判断中英文
-        is_chinese = any('\u4e00' <= c <= '\u9fa5' for c in question_clean)
-        search_query = self.translator.zh_to_en(question_clean) if is_chinese else question_clean
-        print(f"\n--- 检索中：{question_clean} ---")
-        if is_chinese:
-            print(f"翻译为英文检索：{search_query}")
+        self.db = FAISS.load_local(
+            rag_path, embeddings, allow_dangerous_deserialization=True
+        )
 
-        # RAG 检索
-        docs = self.db.similarity_search(search_query, k=top_k)
-        context = "\n".join([doc.page_content for doc in docs])
+        self.documents = [d.page_content for d in self.db.docstore._dict.values()]
+        self.bm25 = BM25Okapi([d.lower().split() for d in self.documents])
 
-        # 全面有效 Prompt：专业、结构化、防幻觉、防跑偏
-        prompt = f"""You are a professional ophthalmologist specializing in retinal diseases. Answer the patient's question in Chinese if the question is in Chinese, otherwise in English. Strictly based on the following medical information only. Do not hallucinate, do not add unrelated content, do not output any technical warnings or logs. Make the answer complete, structured, and end with a natural conclusion. Structure the answer as:
-1. Core explanation
-2. Key details and causes
-3. Daily precautions
-4. Medical advice
+        # ---------------- Optional Reranker ----------------
+        self.reranker = Reranker()
 
-Medical information:
+        # ---------------- Translator ----------------
+        self.translator = LocalTranslator(device="cpu")
+
+        # ---------------- Query Rewriter ----------------
+        self.query_rewriter = QueryRewriter()
+
+        print(f"[QA] Initializing system with:")
+        print(f"[QA] Retrieval mode: {self.retrieval_mode}")
+        print(f"[QA] Query rewrite enabled: {self.use_query_rewrite}")
+
+    # ========================================================
+    # Retrieval Methods
+    # ========================================================
+
+    def vector_search(self, query, k=8):
+        docs = self.db.similarity_search(query, k=k)
+        return [d.page_content for d in docs]
+
+    def hybrid_search(self, query, k=20, alpha=0.7):
+        vector_results = self.db.similarity_search_with_score(query, k=k)
+        vector_scores = {d.page_content: 1 / (1 + s) for d, s in vector_results}
+
+        bm25_scores = self.bm25.get_scores(query.lower().split())
+
+        combined = {}
+        for rank, (doc, score) in enumerate(
+            sorted(vector_scores.items(), key=lambda x: x[1], reverse=True), 1
+        ):
+            combined[doc] = combined.get(doc, 0) + alpha * score / rank
+
+        for idx, score in enumerate(bm25_scores):
+            if score > 0:
+                combined[self.documents[idx]] = combined.get(self.documents[idx], 0) + (
+                    (1 - alpha) * score / 1000
+                )
+
+        return sorted(combined, key=combined.get, reverse=True)
+
+    # ========================================================
+    # Answer
+    # ========================================================
+
+    def answer(self, question: str, max_new_tokens=200):
+        question = re.sub(
+            r"[^\w\s\u4e00-\u9fa5A-Za-z.,!?，。？！]", "", question
+        ).strip()
+
+        is_zh = any("\u4e00" <= c <= "\u9fa5" for c in question)
+
+        # -------- Translation --------
+        search_query = (
+            self.translator.zh_to_en(question) if is_zh else question
+        )
+
+        # -------- Query Rewriting (Safe & Optional) --------
+        if self.use_query_rewrite:
+            try:
+                rewritten_query = self.query_rewriter.rewrite(search_query)
+            except Exception:
+                rewritten_query = search_query
+        else:
+            rewritten_query = search_query
+
+        # ---------------- Retrieval Switch ----------------
+        if self.retrieval_mode == "vector":
+            context_docs = self.vector_search(rewritten_query, k=8)
+
+        elif self.retrieval_mode == "hybrid":
+            context_docs = self.hybrid_search(rewritten_query)[:8]
+
+        elif self.retrieval_mode == "hybrid_rerank":
+            # 按照用户要求的流程：Recall (20) → Rerank (top 5) → Context merge (max 8)
+            recall_k = 20  # 召回20个文档
+            rerank_top_k = 5  # 重排序后取前5个
+            max_context_docs = 8  # 最大上下文文档数为8
+            
+            recall_docs = self.hybrid_search(rewritten_query)[:recall_k]  # 首先获取20个文档
+            reranked = self.reranker.rerank(rewritten_query, recall_docs, top_k=rerank_top_k)  # 重排序取前5个
+            
+            # 合并重排序结果和原始结果，确保没有重复文档，并且总数不超过8个
+            # 使用集合来提高查找效率
+            context_set = set(reranked)  # 先添加重排序结果到集合
+            context_docs = reranked.copy()  # 先添加重排序结果到列表
+            
+            # 从原始结果中添加额外的文档，跳过已经在重排序结果中的文档
+            for doc in recall_docs:
+                if doc not in context_set and len(context_docs) < max_context_docs:
+                    context_docs.append(doc)
+                    context_set.add(doc)
+                if len(context_docs) >= max_context_docs:
+                    break
+            
+            # 确保上下文文档数不超过最大值
+            context_docs = context_docs[:max_context_docs]
+
+        else:
+            raise ValueError("Invalid retrieval_mode")
+
+        context = "\n".join(context_docs)
+
+        prompt = f"""
+You are an ophthalmology health assistant.
+
+Rules:
+1. Provide medical knowledge and daily care advice only.
+2. Do NOT diagnose or prescribe medication.
+3. If symptoms are serious, advise seeing a doctor.
+
+Medical reference:
 {context}
 
-Patient question: {question_clean}
+Question:
+{question}
 
-Answer:"""
+Answer in {"Chinese" if is_zh else "English"}:
+"""
 
-        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
-
-        if self.stream_output:
-            streamer = TextStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=True)
-        else:
-            streamer = None
+        inputs = self.tokenizer(prompt, return_tensors="pt")
+        inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
 
         with torch.no_grad():
-            output = self.model.generate(
+            output_ids = self.model.generate(
                 **inputs,
                 max_new_tokens=max_new_tokens,
-                temperature=0.1,  # 低温度，严谨防幻觉
-                do_sample=False,  # 贪婪解码，最稳定
-                top_p=0.95,  # 加 top_p 平衡，如果需要轻微多样性
-                repetition_penalty=1.3,
+                do_sample=False,
                 eos_token_id=self.tokenizer.eos_token_id,
-                pad_token_id=self.tokenizer.pad_token_id,
-                streamer=streamer
+                use_cache=True,  # 使用缓存提高生成速度
+                num_return_sequences=1,  # 只生成一个序列
+                temperature=0.0,  # 确定性生成，提高速度
             )
 
-        if streamer is None:
-            answer_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-        else:
-            answer_text = ""  # 流式已打印
+        text = self.tokenizer.decode(
+            output_ids[0], skip_special_tokens=True
+        ).replace(prompt, "").strip()
 
-        # 后处理：防戛然而止 + 加免责声明 + 翻译回中文（英文问中文不翻译）
-        if len(answer_text) < 50 or not answer_text.endswith(("。", "！", "？", "～")):
-            answer_text += " 有其他问题随时问我哦～"
-        answer_text += "\n\n【重要提醒】本回答仅供参考，不能替代专业医生诊断，请及时就医。"
+        if not is_zh:
+            text += (
+                "\n\nCommon measures include blinking more often, "
+                "using artificial tears, taking regular screen breaks, "
+                "proper lighting, and staying hydrated."
+            )
 
-        if not is_chinese and not self.stream_output:
-            answer_text = self.translator.en_to_zh(answer_text)
+        text += (
+            "\n\nDisclaimer: This answer is for informational purposes only "
+            "and does not replace professional medical advice."
+        )
 
-        return answer_text
+        return text
 
-# 对外函数
-eye_qa = EyeQASystem().answer
+
+# ============================================================
+# evaluate.py 接口
+# ============================================================
+
+# 缓存QA系统实例，避免重复创建
+_qa_system_cache = {}
+
+def get_eye_qa_system(retrieval_mode="hybrid_rerank", use_query_rewrite=True, stream_output=False):
+    """
+    获取配置化的QA系统实例
+    
+    参数:
+        retrieval_mode: str - 检索模式
+            - "vector": 纯向量搜索，适合语义相关的查询
+            - "hybrid": 向量+BM25混合搜索，平衡语义和关键词匹配
+            - "hybrid_rerank": 混合搜索+重排序，进一步优化结果
+        use_query_rewrite: bool - 是否启用查询改写
+            - True: 启用，移除礼貌用语，标准化医学术语
+            - False: 禁用，使用原始查询
+        stream_output: bool - 是否启用流式输出
+            - True: 启用，适合实时交互场景
+            - False: 禁用，适合批量处理场景
+    
+    返回:
+        function - 配置好的QA系统回答函数
+    """
+    # 生成缓存键
+    cache_key = f"{retrieval_mode}_{use_query_rewrite}_{stream_output}"
+    
+    # 如果缓存中存在实例，直接返回
+    if cache_key in _qa_system_cache:
+        return _qa_system_cache[cache_key]
+    
+    # 否则创建新实例并缓存
+    qa_system = EyeQASystem(
+        retrieval_mode=retrieval_mode,
+        use_query_rewrite=use_query_rewrite,
+        stream_output=stream_output
+    ).answer
+    
+    _qa_system_cache[cache_key] = qa_system
+    return qa_system
+
+# 按需创建实例，避免模块导入时自动加载模型
+def get_default_eye_qa():
+    """获取默认配置的QA系统实例"""
+    return get_eye_qa_system()

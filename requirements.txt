@@ -1,0 +1,13 @@
+numpy==1.26.4
+torch
+faiss-gpu
+transformers
+peft
+accelerate
+sentence-transformers
+langchain
+langchain-community
+langchain-huggingface
+rank_bm25
+rouge-score
+bert-score
