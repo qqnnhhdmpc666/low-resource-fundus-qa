@@ -1,0 +1,68 @@
+{
+  "eval_vector_rewrite_True.json": {
+    "rouge_l": 0.18132750007777737,
+    "bert_f1": 0.8657729864120484,
+    "avg_response_time": 71.06842774152756,
+    "keyword_coverage": 0.10357142857142856,
+    "checklist_coverage": 0.525,
+    "correctness": 4.85,
+    "completeness": 5.0,
+    "safety": 4.4,
+    "helpfulness": 4.3
+  },
+  "eval_vector_rewrite_False.json": {
+    "rouge_l": 0.1802382507952987,
+    "bert_f1": 0.865539339184761,
+    "avg_response_time": 73.21459263563156,
+    "keyword_coverage": 0.10357142857142856,
+    "checklist_coverage": 0.525,
+    "correctness": 4.85,
+    "completeness": 5.0,
+    "safety": 4.4,
+    "helpfulness": 4.3
+  },
+  "eval_hybrid_rewrite_True.json": {
+    "rouge_l": 0.17699946058499616,
+    "bert_f1": 0.8653978407382965,
+    "avg_response_time": 68.93626966476441,
+    "keyword_coverage": 0.09732142857142857,
+    "checklist_coverage": 0.525,
+    "correctness": 4.85,
+    "completeness": 5.0,
+    "safety": 4.4,
+    "helpfulness": 4.4
+  },
+  "eval_hybrid_rewrite_False.json": {
+    "rouge_l": 0.17777430710897163,
+    "bert_f1": 0.865462264418602,
+    "avg_response_time": 69.26669635772706,
+    "keyword_coverage": 0.09732142857142857,
+    "checklist_coverage": 0.525,
+    "correctness": 4.85,
+    "completeness": 5.0,
+    "safety": 4.4,
+    "helpfulness": 4.4
+  },
+  "eval_hybrid_rerank_rewrite_True.json": {
+    "rouge_l": 0.18500046459355954,
+    "bert_f1": 0.8669689476490021,
+    "avg_response_time": 78.13806627988815,
+    "keyword_coverage": 0.10982142857142857,
+    "checklist_coverage": 0.5666666666666667,
+    "correctness": 4.75,
+    "completeness": 5.0,
+    "safety": 4.7,
+    "helpfulness": 4.35
+  },
+  "eval_hybrid_rerank_rewrite_False.json": {
+    "rouge_l": 0.18408993026220283,
+    "bert_f1": 0.8669350624084473,
+    "avg_response_time": 77.88119982481003,
+    "keyword_coverage": 0.10982142857142857,
+    "checklist_coverage": 0.5833333333333334,
+    "correctness": 4.75,
+    "completeness": 5.0,
+    "safety": 4.7,
+    "helpfulness": 4.35
+  }
+}

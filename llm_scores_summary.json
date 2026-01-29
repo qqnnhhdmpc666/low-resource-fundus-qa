@@ -1,0 +1,38 @@
+{
+  "llm_scores_vector_rewrite_True.json": {
+    "correctness": 4.85,
+    "completeness": 5.0,
+    "safety": 4.4,
+    "helpfulness": 4.3
+  },
+  "llm_scores_vector_rewrite_False.json": {
+    "correctness": 4.85,
+    "completeness": 5.0,
+    "safety": 4.4,
+    "helpfulness": 4.3
+  },
+  "llm_scores_hybrid_rewrite_True.json": {
+    "correctness": 4.85,
+    "completeness": 5.0,
+    "safety": 4.4,
+    "helpfulness": 4.4
+  },
+  "llm_scores_hybrid_rewrite_False.json": {
+    "correctness": 4.85,
+    "completeness": 5.0,
+    "safety": 4.4,
+    "helpfulness": 4.4
+  },
+  "llm_scores_hybrid_rerank_rewrite_True.json": {
+    "correctness": 4.75,
+    "completeness": 5.0,
+    "safety": 4.7,
+    "helpfulness": 4.35
+  },
+  "llm_scores_hybrid_rerank_rewrite_False.json": {
+    "correctness": 4.75,
+    "completeness": 5.0,
+    "safety": 4.7,
+    "helpfulness": 4.35
+  }
+}

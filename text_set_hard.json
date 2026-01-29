@@ -1,0 +1,122 @@
+[
+  {
+    "id": 101,
+    "question": "After several months, I notice that bright lights at night create halos and my vision seems foggy, especially when driving. What could this indicate and what should I do?",
+    "reference_answer": "Gradual foggy vision combined with halos around lights, particularly at night, is often associated with lens opacity changes such as cataracts. These symptoms tend to progress slowly and may interfere with daily activities like driving. An eye examination can assess lens clarity and visual function. Early stages may only require monitoring, while advanced cases may benefit from surgical intervention. Protecting the eyes from excessive UV exposure can help slow progression.",
+    "expected_keywords": ["cataracts", "halos", "foggy vision", "night driving", "eye exam", "lens opacity", "surgery", "UV protection"]
+  },
+  {
+    "id": 102,
+    "question": "A patient has no obvious discomfort but routine screening reveals progressive peripheral vision loss. What condition should be suspected and how is it confirmed?",
+    "reference_answer": "Progressive loss of peripheral vision without early symptoms is characteristic of glaucoma. Confirmation involves measuring intraocular pressure, examining the optic nerve head, and performing visual field testing. Because early glaucoma is often asymptomatic, regular screening is critical. Early diagnosis allows timely intervention to slow optic nerve damage and preserve vision.",
+    "expected_keywords": ["glaucoma", "peripheral vision", "optic nerve", "intraocular pressure", "visual field", "screening", "early detection"]
+  },
+  {
+    "id": 103,
+    "question": "An elderly person reports straight lines appearing wavy when reading and difficulty recognizing faces. What eye condition may cause this?",
+    "reference_answer": "Distortion of straight lines and difficulty recognizing faces suggest macular involvement, commonly seen in age-related macular degeneration. This condition affects central vision and may progress over time. Retinal imaging and visual acuity tests help confirm the diagnosis. Early management can slow progression and reduce vision loss.",
+    "expected_keywords": ["macular degeneration", "central vision", "distortion", "wavy lines", "retina", "visual acuity", "early management"]
+  },
+  {
+    "id": 104,
+    "question": "A long-term diabetic patient experiences gradual vision changes without pain. What eye complications should be considered?",
+    "reference_answer": "Long-term diabetes can lead to retinal microvascular damage known as diabetic retinopathy. Early stages may be asymptomatic, while advanced stages can cause vision loss. Fundus examination and retinal imaging are essential for detection. Strict blood glucose control and timely treatment help reduce progression.",
+    "expected_keywords": ["diabetic retinopathy", "diabetes", "retinal damage", "fundus exam", "vision loss", "blood glucose control"]
+  },
+  {
+    "id": 105,
+    "question": "Someone suddenly notices flashes followed by a curtain-like shadow in their visual field. Why is this an emergency?",
+    "reference_answer": "Flashes of light followed by a shadow or curtain sensation may indicate retinal detachment. This condition requires immediate ophthalmologic evaluation to prevent permanent vision loss. Prompt treatment improves the likelihood of visual recovery. Delayed care increases the risk of irreversible damage.",
+    "expected_keywords": ["retinal detachment", "flashes", "visual field loss", "emergency", "ophthalmologist", "vision loss"]
+  },
+  {
+    "id": 106,
+    "question": "A child frequently tilts their head and struggles to see the blackboard clearly despite normal intelligence. What should be evaluated?",
+    "reference_answer": "Head tilting and difficulty seeing distant objects in children may indicate refractive errors or eye alignment issues. A comprehensive pediatric eye exam can assess visual acuity, refraction, and binocular coordination. Early detection is important to prevent amblyopia and support learning development.",
+    "expected_keywords": ["pediatric eye exam", "refractive error", "visual acuity", "amblyopia", "eye alignment", "learning"]
+  },
+  {
+    "id": 107,
+    "question": "Prolonged screen use causes burning sensation and fluctuating vision that improves after blinking. What condition is likely involved?",
+    "reference_answer": "Burning sensation and fluctuating vision that improves with blinking are characteristic of dry eye disease. Reduced tear film stability leads to discomfort during prolonged screen use. Management includes artificial tears, environmental modification, and improved blinking habits.",
+    "expected_keywords": ["dry eye", "tear film", "burning sensation", "blinking", "screen use", "artificial tears"]
+  },
+  {
+    "id": 108,
+    "question": "A patient complains of eye redness, pain, and light sensitivity after sleeping in contact lenses. What complication should be suspected?",
+    "reference_answer": "Sleeping in contact lenses increases the risk of corneal infection and inflammation, such as microbial keratitis. Symptoms include pain, redness, and photophobia. Immediate evaluation is necessary to prevent corneal scarring and vision impairment.",
+    "expected_keywords": ["contact lenses", "keratitis", "corneal infection", "redness", "pain", "light sensitivity"]
+  },
+  {
+    "id": 109,
+    "question": "Why might prolonged near work in children contribute to progressive distance blur over time?",
+    "reference_answer": "Prolonged near work may promote excessive eye elongation in children, contributing to myopia progression. Limited outdoor exposure further increases risk. Preventive strategies include regular outdoor activity, visual breaks, and appropriate optical or pharmacologic interventions.",
+    "expected_keywords": ["myopia progression", "near work", "eye elongation", "outdoor activity", "visual breaks", "prevention"]
+  },
+  {
+    "id": 110,
+    "question": "A patient reports eye discomfort accompanied by seasonal sneezing and nasal symptoms. What is the likely cause?",
+    "reference_answer": "Eye discomfort associated with sneezing and nasal symptoms suggests allergic conjunctivitis. Inflammatory responses to allergens cause itching, redness, and tearing. Management includes allergen avoidance and antihistamine eye drops.",
+    "expected_keywords": ["allergic conjunctivitis", "allergy", "itching", "redness", "antihistamine", "inflammation"]
+  },
+  {
+    "id": 111,
+    "question": "What underlying issue is suggested when frequent prescription changes fail to improve vision clarity?",
+    "reference_answer": "Frequent prescription changes with limited improvement may indicate lens opacity, corneal irregularity, or retinal pathology. A comprehensive eye examination helps identify the underlying cause. Addressing the primary pathology is essential rather than repeated refraction.",
+    "expected_keywords": ["vision clarity", "lens opacity", "cornea", "retina", "eye exam", "refraction"]
+  },
+  {
+    "id": 112,
+    "question": "Why is loss of contrast sensitivity significant even when visual acuity appears normal?",
+    "reference_answer": "Reduced contrast sensitivity may indicate early retinal or optic nerve dysfunction despite preserved visual acuity. It can affect night driving and low-light performance. Specialized testing helps detect early functional impairment.",
+    "expected_keywords": ["contrast sensitivity", "retina", "optic nerve", "visual acuity", "early dysfunction"]
+  },
+  {
+    "id": 113,
+    "question": "A patient experiences eye fatigue and headaches after reading despite clear distance vision. What might explain this?",
+    "reference_answer": "Eye fatigue and headaches during near tasks may result from uncorrected presbyopia or accommodative strain. Near vision assessment and appropriate corrective lenses can alleviate symptoms. Regular breaks and ergonomic adjustments also help.",
+    "expected_keywords": ["presbyopia", "eye fatigue", "headache", "near vision", "accommodation", "reading"]
+  },
+  {
+    "id": 114,
+    "question": "Why is monitoring optic nerve appearance critical even if eye pressure is within normal range?",
+    "reference_answer": "Normal intraocular pressure does not exclude glaucomatous damage. Structural changes of the optic nerve may precede pressure elevation. Regular optic nerve evaluation allows early detection and intervention.",
+    "expected_keywords": ["optic nerve", "glaucoma", "intraocular pressure", "early detection", "monitoring"]
+  },
+  {
+    "id": 115,
+    "question": "How can chronic eye rubbing worsen visual outcomes over time?",
+    "reference_answer": "Chronic eye rubbing can distort corneal structure, potentially leading to keratoconus. Progressive corneal thinning affects visual quality and may require specialized management. Avoiding eye rubbing is important for corneal health.",
+    "expected_keywords": ["eye rubbing", "cornea", "keratoconus", "visual quality", "corneal thinning"]
+  },
+  {
+    "id": 116,
+    "question": "What does delayed dark adaptation suggest about retinal function?",
+    "reference_answer": "Delayed dark adaptation may indicate rod dysfunction or early retinal disease. It can affect night vision and safety. Specialized retinal testing helps determine underlying causes.",
+    "expected_keywords": ["dark adaptation", "retina", "rod cells", "night vision", "retinal disease"]
+  },
+  {
+    "id": 117,
+    "question": "Why is eye protection recommended even on cloudy days?",
+    "reference_answer": "Ultraviolet radiation penetrates clouds and can damage ocular tissues over time. Chronic exposure increases the risk of cataracts and macular degeneration. Consistent eye protection reduces cumulative damage.",
+    "expected_keywords": ["UV radiation", "eye protection", "cataracts", "macular degeneration", "long-term damage"]
+  },
+  {
+    "id": 118,
+    "question": "What does sudden eye pain with nausea and blurred vision suggest?",
+    "reference_answer": "Sudden eye pain accompanied by nausea and blurred vision may indicate acute angle-closure glaucoma. This is a medical emergency requiring immediate treatment to prevent vision loss.",
+    "expected_keywords": ["acute glaucoma", "eye pain", "nausea", "blurred vision", "emergency", "vision loss"]
+  },
+  {
+    "id": 119,
+    "question": "Why is consistent follow-up important even after successful eye treatment?",
+    "reference_answer": "Many eye conditions are chronic or progressive and may recur or worsen over time. Regular follow-up allows monitoring of treatment effectiveness and early detection of complications. Long-term care helps preserve vision.",
+    "expected_keywords": ["follow-up", "chronic eye disease", "monitoring", "treatment effectiveness", "vision preservation"]
+  },
+  {
+    "id": 120,
+    "question": "What visual risks are associated with prolonged exposure to poorly adjusted digital displays?",
+    "reference_answer": "Poorly adjusted digital displays can cause eye strain, dryness, and reduced visual comfort. Long-term exposure may exacerbate underlying ocular surface issues. Ergonomic adjustments and regular breaks reduce risk.",
+    "expected_keywords": ["digital display", "eye strain", "dryness", "visual comfort", "ergonomics", "breaks"]
+  }
+]
