@@ -39,7 +39,7 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(description='眼底健康问答系统评测脚本')
 parser.add_argument('--retrieval_mode', type=str, default='hybrid_rerank', 
-                    choices=['vector', 'hybrid', 'hybrid_rerank'],
+                    choices=['vector', 'hybrid', 'hybrid_rerank', 'vector_rerank'],
                     help='检索模式')
 parser.add_argument('--use_query_rewrite', type=str2bool, default=True,
                     help='是否启用查询改写')
@@ -53,6 +53,8 @@ parser.add_argument('--save_results', type=str2bool, default=True,
                     help='是否保存结果')
 parser.add_argument('--embedding_threshold', type=float, default=0.55,
                     help='关键词语义覆盖率阈值')
+parser.add_argument('--alpha', type=float, default=0.7,
+                    help='混合检索权重 (0.0-1.0)')
 args = parser.parse_args()
 
 # ============================================================
@@ -91,15 +93,18 @@ print(f"embedding_threshold: {args.embedding_threshold}")
 print(f"\n=== 初始化 QA 系统 ===")
 print(f"使用检索模式: {args.retrieval_mode}")
 print(f"使用查询改写: {args.use_query_rewrite}")
+print(f"混合检索权重: {args.alpha}")
 eye_qa = get_eye_qa_system(
     retrieval_mode=args.retrieval_mode,
     use_query_rewrite=args.use_query_rewrite,
-    stream_output=False
+    stream_output=False,
+    alpha=args.alpha
 )
 
 print(f"\n=== 评测配置 ===")
 print(f"检索模式: {args.retrieval_mode}")
 print(f"查询改写: {args.use_query_rewrite}")
+print(f"混合检索权重: {args.alpha}")
 print(f"测试文件: {TEST_FILE}")
 print(f"测试样本数: {FAST_MODE_N}")
 print(f"结果保存到: {SAVE_FILE}")

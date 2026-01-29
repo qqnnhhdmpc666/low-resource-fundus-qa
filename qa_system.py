@@ -103,6 +103,7 @@ class EyeQASystem:
         retrieval_mode="vector",   # 检索模式：vector(纯向量) | hybrid(向量+BM25) | hybrid_rerank(混合+重排序)
         use_query_rewrite=True,    # 查询改写：True(启用) | False(禁用)
         stream_output=False,  # 流式输出：True(启用) | False(禁用)
+        alpha=0.7,  # 混合检索权重：vector权重
     ):
         # ====== 旋钮参数 ======
         # 1. retrieval_mode: 控制知识检索策略
@@ -113,10 +114,16 @@ class EyeQASystem:
         # 2. use_query_rewrite: 控制是否对查询进行标准化处理
         #    - True: 启用查询改写，移除礼貌用语，标准化医学术语
         #    - False: 禁用查询改写，使用原始查询
+        #
+        # 3. alpha: 混合检索权重
+        #    - 0.0: 纯BM25
+        #    - 0.5: 向量和BM25权重相等
+        #    - 1.0: 纯向量
         # =====================
         self.retrieval_mode = retrieval_mode
         self.stream_output = stream_output
         self.use_query_rewrite = use_query_rewrite
+        self.alpha = alpha
 
         # ---------------- Model ----------------
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -167,7 +174,7 @@ class EyeQASystem:
         docs = self.db.similarity_search(query, k=k)
         return [d.page_content for d in docs]
 
-    def hybrid_search(self, query, k=20, alpha=0.7):
+    def hybrid_search(self, query, k=20):
         vector_results = self.db.similarity_search_with_score(query, k=k)
         vector_scores = {d.page_content: 1 / (1 + s) for d, s in vector_results}
 
@@ -177,12 +184,12 @@ class EyeQASystem:
         for rank, (doc, score) in enumerate(
             sorted(vector_scores.items(), key=lambda x: x[1], reverse=True), 1
         ):
-            combined[doc] = combined.get(doc, 0) + alpha * score / rank
+            combined[doc] = combined.get(doc, 0) + self.alpha * score / rank
 
         for idx, score in enumerate(bm25_scores):
             if score > 0:
                 combined[self.documents[idx]] = combined.get(self.documents[idx], 0) + (
-                    (1 - alpha) * score / 1000
+                    (1 - self.alpha) * score / 1000
                 )
 
         return sorted(combined, key=combined.get, reverse=True)
@@ -219,21 +226,17 @@ class EyeQASystem:
         elif self.retrieval_mode == "hybrid":
             context_docs = self.hybrid_search(rewritten_query)[:8]
 
-        elif self.retrieval_mode == "hybrid_rerank":
-            # 按照用户要求的流程：Recall (20) → Rerank (top 5) → Context merge (max 8)
-            recall_k = 20  # 召回20个文档
-            rerank_top_k = 5  # 重排序后取前5个
-            max_context_docs = 8  # 最大上下文文档数为8
+        elif self.retrieval_mode == "vector_rerank":
+            recall_k = 20
+            rerank_top_k = 5
+            max_context_docs = 8
             
-            recall_docs = self.hybrid_search(rewritten_query)[:recall_k]  # 首先获取20个文档
-            reranked = self.reranker.rerank(rewritten_query, recall_docs, top_k=rerank_top_k)  # 重排序取前5个
+            recall_docs = self.vector_search(rewritten_query, k=recall_k)
+            reranked = self.reranker.rerank(rewritten_query, recall_docs, top_k=rerank_top_k)
             
-            # 合并重排序结果和原始结果，确保没有重复文档，并且总数不超过8个
-            # 使用集合来提高查找效率
-            context_set = set(reranked)  # 先添加重排序结果到集合
-            context_docs = reranked.copy()  # 先添加重排序结果到列表
+            context_set = set(reranked)
+            context_docs = reranked.copy()
             
-            # 从原始结果中添加额外的文档，跳过已经在重排序结果中的文档
             for doc in recall_docs:
                 if doc not in context_set and len(context_docs) < max_context_docs:
                     context_docs.append(doc)
@@ -241,7 +244,26 @@ class EyeQASystem:
                 if len(context_docs) >= max_context_docs:
                     break
             
-            # 确保上下文文档数不超过最大值
+            context_docs = context_docs[:max_context_docs]
+
+        elif self.retrieval_mode == "hybrid_rerank":
+            recall_k = 20
+            rerank_top_k = 5
+            max_context_docs = 8
+            
+            recall_docs = self.hybrid_search(rewritten_query)[:recall_k]
+            reranked = self.reranker.rerank(rewritten_query, recall_docs, top_k=rerank_top_k)
+            
+            context_set = set(reranked)
+            context_docs = reranked.copy()
+            
+            for doc in recall_docs:
+                if doc not in context_set and len(context_docs) < max_context_docs:
+                    context_docs.append(doc)
+                    context_set.add(doc)
+                if len(context_docs) >= max_context_docs:
+                    break
+            
             context_docs = context_docs[:max_context_docs]
 
         else:
@@ -306,7 +328,7 @@ Answer in {"Chinese" if is_zh else "English"}:
 # 缓存QA系统实例，避免重复创建
 _qa_system_cache = {}
 
-def get_eye_qa_system(retrieval_mode="hybrid_rerank", use_query_rewrite=True, stream_output=False):
+def get_eye_qa_system(retrieval_mode="hybrid_rerank", use_query_rewrite=True, stream_output=False, alpha=0.7):
     """
     获取配置化的QA系统实例
     
@@ -321,12 +343,16 @@ def get_eye_qa_system(retrieval_mode="hybrid_rerank", use_query_rewrite=True, st
         stream_output: bool - 是否启用流式输出
             - True: 启用，适合实时交互场景
             - False: 禁用，适合批量处理场景
+        alpha: float - 混合检索权重 (0.0-1.0)
+            - 0.0: 纯BM25
+            - 0.5: 向量和BM25权重相等
+            - 1.0: 纯向量
     
     返回:
         function - 配置好的QA系统回答函数
     """
     # 生成缓存键
-    cache_key = f"{retrieval_mode}_{use_query_rewrite}_{stream_output}"
+    cache_key = f"{retrieval_mode}_{use_query_rewrite}_{stream_output}_{alpha}"
     
     # 如果缓存中存在实例，直接返回
     if cache_key in _qa_system_cache:
@@ -336,7 +362,8 @@ def get_eye_qa_system(retrieval_mode="hybrid_rerank", use_query_rewrite=True, st
     qa_system = EyeQASystem(
         retrieval_mode=retrieval_mode,
         use_query_rewrite=use_query_rewrite,
-        stream_output=stream_output
+        stream_output=stream_output,
+        alpha=alpha
     ).answer
     
     _qa_system_cache[cache_key] = qa_system

@@ -9,9 +9,10 @@ from qa_system import EyeQASystem
 
 # Initialize the QA system
 qa_system = EyeQASystem(
-    retrieval_mode="hybrid_rerank",  # Options: vector, hybrid, hybrid_rerank
+    retrieval_mode="hybrid_rerank",  # Options: vector, hybrid, vector_rerank, hybrid_rerank
     use_query_rewrite=True,          # Enable/disable query rewriting
-    stream_output=False                # Enable/disable streaming output
+    stream_output=False,              # Enable/disable streaming output
+    alpha=0.5                         # Hybrid retrieval weight (0.0-1.0)
 )
 
 # Ask a question
@@ -28,11 +29,11 @@ print(f"Answer: {answer}")
 from qa_system import EyeQASystem
 
 # Compare different retrieval modes
-modes = ["vector", "hybrid", "hybrid_rerank"]
+modes = ["vector", "hybrid", "vector_rerank", "hybrid_rerank"]
 question = "What are the signs of cataracts?"
 
 for mode in modes:
-    qa_system = EyeQASystem(retrieval_mode=mode, use_query_rewrite=True)
+    qa_system = EyeQASystem(retrieval_mode=mode, use_query_rewrite=True, alpha=0.5)
     answer = qa_system.answer(question)
     print(f"\n{mode.upper()}:")
     print(answer)
@@ -88,7 +89,10 @@ print(f"回答: {answer}")
 
 ```bash
 # Run evaluation on test set
-python evaluate.py --retrieval_mode hybrid_rerank --use_query_rewrite True --test_file test_set_en.json
+python evaluate.py --retrieval_mode hybrid_rerank --use_query_rewrite True --test_file test_set_en.txt
+
+# Run hybrid retrieval with custom alpha
+python evaluate.py --retrieval_mode hybrid --use_query_rewrite True --test_file test_set_en.txt --alpha 0.5
 
 # Run all ablation experiments
 python run_all_experiments.py
