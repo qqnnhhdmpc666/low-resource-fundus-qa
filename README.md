@@ -138,17 +138,4 @@ python generate_comprehensive_summary.py
 - ⚠️ 模型文件较大，首次运行需要下载
 - ⚠️ 医疗回答仅供参考，不能替代专业医疗建议
 
-## 许可证
 
-MIT License
-
-## 联系方式
-
-- 项目链接：[GitHub Repository URL]
-- 问题反馈：[Issues]
-
-## 致谢
-
-- Qwen 团队提供的基础模型
-- Hugging Face 提供的数据集和工具
-- 开源社区的支持
