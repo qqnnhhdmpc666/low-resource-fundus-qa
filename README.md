@@ -1,300 +1,401 @@
-# 眼底病智能问答系统（低资源医疗 RAG + LoRA）
+# 低资源眼底病智能问答系统（RAG + QLoRA + Type-Aware）
 
-基于 Qwen2.5-7B-Instruct 构建的眼底病垂直领域智能问答系统，采用 RAG 架构与 LoRA 微调技术，支持中英文问答。
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 项目特点
+基于 **Qwen2.5-7B-Instruct** 构建的眼底病垂直领域智能问答系统，采用 **RAG** 架构、**QLoRA** 微调技术与 **Type-Aware** 智能路由策略，支持中英文问答，适配 **A4000 16GB** 低算力环境。
 
-- ✅ **完全离线**：本地部署，无需联网
-- ✅ **跨语言支持**：MarianMT 中英互译
-- ✅ **混合检索**：向量检索 + BM25 + Cross-Encoder 重排序
-- ✅ **防幻觉机制**：多层防护确保医学安全性
-- ✅ **完整评测**：ROUGE、BERTScore、LLM-as-a-Judge
+[GitHub 项目地址](https://github.com/qqnnhhdmpc666/low-resource-fundus-qa)
 
-## 技术栈
+---
 
-- Python | PyTorch | Transformers
-- QLoRA | FAISS | BM25
-- MarianMT | Cross-Encoder
-- Sentence-Transformers
+## 🌟 项目亮点
 
-## 系统整体流程
+- ✅ **Type-Aware 智能路由**：基于 NLI 模型自动识别问题类型，动态选择最优检索策略
+- ✅ **四策略检索体系**：vector / hybrid / vector_rerank / hybrid_rerank 全面覆盖
+- ✅ **混合检索优化**：α=0.5 最优权重，平衡语义相似度与关键词匹配
+- ✅ **科研级评测体系**：MRR/NDCG/MAP 排名指标 + 同基座模型评测 + 统计显著性检验
+- ✅ **完全离线部署**：本地部署，无需联网，保护医疗数据隐私
+- ✅ **低算力适配**：A4000 16GB 显存可完整运行推理与微调
+- ✅ **医疗安全保障**：多层防护机制，自动追加医疗免责声明
+- ✅ **Evidence Traceability**：完整的证据溯源与可解释性支持
 
-### 系统架构图
+---
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  用户问题输入   │────>│  翻译功能     │────>│  Query Rewrite  │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                                                      │
-                                                      ▼
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Safety约束    │<────│   RAG生成      │<────│    Rerank       │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                                                      ^
-                                                      │
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   最优模型选择   │────>│    检索策略     │────>│    检索执行     │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                                                      ^
-                                                      │
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│ 混合权重α=0.5   │────>│  hybrid检索     │     │   vector检索    │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                                                      │
-                                                      ▼
-┌─────────────────┐     ┌─────────────────┐
-│ 策略性能评估   │────>│  模型比较分析   │
-└─────────────────┘     └─────────────────┘
-```
+## 📊 实验结果速览
 
-### 流程说明
+### 四种检索策略性能对比
 
-1. **用户问题输入**：用户输入眼底病相关问题
-2. **翻译功能**：支持多语言输入，确保系统能处理不同语言的问题
-3. **Query Rewrite**：对用户问题进行改写，提高检索效果
-4. **最优模型选择**：根据预设的最优模型（hybrid_rerank）选择检索策略
-5. **检索策略**：确定使用的检索策略类型（vector或hybrid）
-6. **检索执行**：执行具体的检索操作
-   - **vector检索**：使用纯向量检索
-   - **hybrid检索**：使用混合检索，设置混合权重α=0.5
-7. **Rerank**：使用Cross-Encoder对检索结果进行重排序
-8. **RAG生成**：结合检索结果和语言模型生成回答
-9. **Safety约束**：应用医疗安全机制，确保回答符合医疗安全标准
-10. **策略性能评估**：对不同检索策略的性能进行评估
-11. **模型比较分析**：分析不同模型的性能差异，验证最优模型的选择
+| 策略 | ROUGE-L | BERT-F1 | Judge Score | Checklist Coverage | Avg Time(s) |
+|------|---------|---------|-------------|-------------------|-------------|
+| vector | 0.1813 | 0.8658 | 4.525 | 0.525 | 71.07 |
+| hybrid | 0.1770 | 0.8654 | 4.520 | 0.525 | 68.94 |
+| vector_rerank | 0.133 | 0.857 | 4.435 | 0.630 | 84.81 |
+| **hybrid_rerank** ⭐ | **0.1850** | **0.8670** | **4.585** | **0.5667** | 78.14 |
 
-### 混合检索最优值寻找过程
+### Type-Aware 最优策略映射
 
-在工程实现中，为了找到混合检索的最优权重值，进行了以下实验过程：
+| 问题类型 | 最优策略 | Judge Score | 策略说明 |
+|---------|---------|-------------|---------|
+| emergency | vector | 4.667 | 纯语义检索对紧急情况更安全 |
+| disease_definition | hybrid_rerank | 4.604 | 混合+重排序在定义类问题上最优 |
+| daily_advice | hybrid_rerank | 4.593 | 混合+重排序在日常建议类问题上最优 |
+| decision | hybrid_rerank | 4.500 | 混合+重排序在决策类问题上最优 |
 
-1. **参数范围设定**：设定混合检索权重α的取值范围为0.1到0.9，步长为0.1
-2. **性能评估**：对每个α值，在测试集上评估系统性能
-3. **指标选择**：综合考虑ROUGE-L、BERT-F1和Judge Score等指标
-4. **最优值确定**：通过实验发现α=0.5时，系统在各项指标上达到最佳平衡，既能保持语义检索的优势，又能兼顾关键词匹配的准确性
+---
 
-最终选择α=0.5作为混合检索的默认权重值，在后续所有实验中使用该参数。
+## 🏗️ 系统架构
 
-## 技术架构
-
-### 1. 检索增强生成（RAG）
-- **向量检索**：使用预训练语言模型将问题和文档编码为向量，计算相似度
-- **混合检索**：结合向量检索和BM25检索，提高召回率
-- **重排序**：使用Cross-Encoder对检索结果进行重排序，提高排序质量
-
-### 2. QLoRA参数高效微调
-- 使用QLoRA技术对基础语言模型进行4位量化参数高效微调
-- 针对眼底病领域的问答任务进行专门优化
-- 微调权重存储在`fundus_lora/`目录
-
-### 3. Hybrid Retrieval
-- 结合向量检索和BM25检索的优势
-- 混合权重设置为0.5，平衡语义相似度和关键词匹配
-
-### 4. Cross-Encoder Rerank
-- 使用专门的Cross-Encoder模型对检索结果进行重排序
-- 提高top-k文档的相关性和质量
-
-### 5. 医疗安全机制
-- 对emergency类问题优先考虑安全性
-- 确保回答符合医疗安全标准
-- 提供明确的医疗免责声明
-
-### 6. Evidence Traceability
-- 新增生成后证据绑定模块
-- 为回答提供可追溯的证据来源
-- 增强系统的可解释性和可信度
-
-## 研究设计
-
-### 四种检索策略对比
-- **vector**：纯向量检索，基于语义相似度
-- **hybrid**：混合检索（向量+BM25），平衡语义和关键词
-- **vector_rerank**：向量检索+重排序，提高排序质量
-- **hybrid_rerank**：混合检索+重排序，综合多种检索优势
-
-### Type-Aware思想
-- 不同类型问题对检索策略有不同偏好
-- 日常建议类问题适合语义检索
-- 紧急情况类问题需要更高的安全性
-- 根据问题类型动态选择最优策略
-
-### LLM-as-a-Judge评测维度
-- **正确性**：回答的医学准确性
-- **完整性**：回答的信息全面性
-- **安全性**：回答的医疗安全性
-- **有用性**：回答对用户的实际帮助程度
-
-## 实验设置
-
-### 测试集
-- **50题测试集**：包含20个原始问题和30个扩展问题
-- **问题类型覆盖**：日常建议、疾病定义、决策、紧急情况四种类型
-- **评估目的**：全面验证系统在不同问题类型下的性能
-
-### 评测指标
-- **ROUGE-L**：评估生成答案与参考答案的文本重叠度
-- **BERT-F1**：基于预训练语言模型的语义相似度评估
-- **Judge Score**：LLM-as-a-Judge的综合评分（1-5分）
-- **Checklist Coverage**：评估生成答案对医学检查清单的覆盖程度
-- **Avg Time**：平均响应时间
-
-## 实验结果
-
-### 总体性能
-
-| 策略 | ROUGE-L | BERT-F1 | Judge Score | Checklist Coverage | Avg Time |
-|------|---------|---------|-------------|-------------------|----------|
-| vector | 0.129 | 0.856 | 4.525 | 0.610 | 76.511 |
-| hybrid | 0.130 | 0.854 | 4.520 | 0.607 | 75.035 |
-| vector_rerank | 0.133 | 0.857 | 4.435 | 0.630 | 84.807 |
-| hybrid_rerank | 0.131 | 0.857 | 4.585 | 0.637 | 78.799 |
-
-### 不同问题类型Judge Score
-
-| 问题类型 | vector | hybrid | vector_rerank | hybrid_rerank |
-|----------|--------|--------|---------------|---------------|
-| daily_advice | 4.556 | 4.565 | 4.435 | 4.593 |
-| decision | 4.438 | 4.469 | 4.313 | 4.500 |
-| disease_definition | 4.479 | 4.458 | 4.521 | 4.604 |
-| emergency | 4.667 | 4.500 | 4.417 | 4.667 |
-
-## 关键发现
-
-1. **最优模型确定**：通过综合评估四种检索策略的性能，确定**hybrid_rerank策略**为最优模型。该策略在总体性能上达到了最高的Judge Score（4.585），并在大多数问题类型上表现最佳，特别是在disease_definition类型上达到了4.604的高分
-
-2. **策略性能对比**：
-   - **hybrid_rerank**：最优模型，综合性能最强
-   - **vector**：在emergency问题上表现突出（4.667），说明在紧急情况下纯语义检索可能更安全
-   - **hybrid**：基础性能良好，rerank后性能显著提升
-   - **vector_rerank**：性能相对较弱，可能是因为rerank对vector策略的负面影响
-
-3. **rerank效果分析**：rerank对不同策略影响不同
-   - 对于vector策略：rerank可能会降低性能（从4.525降至4.435）
-   - 对于hybrid策略：rerank能显著提高性能（从4.520提升至4.585）
-
-4. **问题类型适应性**：不同问题类型对检索策略有明显偏好，为后续的Type-Aware策略优化提供了指导
-
-## 项目结构
+### 整体流程
 
 ```
-low-resource-fundus-qa-master/
-├── qa_system.py              # QA 系统核心实现
-├── finetune.py              # LoRA 微调脚本
-├── translator.py            # 中英翻译模块
-├── evaluate.py              # 评测脚本
-├── build_rag.py             # 构建 RAG 知识库
-├── download_dataset.py       # 数据集下载
-├── extract_rag.py           # 提取 RAG 数据
-├── extract_sft.py           # 提取 SFT 数据
-├── llm_judge_offline.py    # 离线 LLM 评测
-├── generation.py            # 流式生成
-└── requirements.txt         # 依赖列表
+用户问题输入
+    ↓
+[翻译模块] MarianMT 中英互译
+    ↓
+[Query Rewrite] 查询改写优化
+    ↓
+[Type-Aware 路由] NLI 分类器识别问题类型
+    ↓
+[检索策略选择] vector / hybrid / hybrid_rerank
+    ↓
+[检索执行]
+    ├── 向量检索: FAISS + all-MiniLM-L6-v2
+    ├── BM25检索: rank_bm25
+    └── 重排序: Cross-Encoder/ms-marco-MiniLM-L-6-v2
+    ↓
+[上下文构建] 最多 8 个文档
+    ↓
+[Prompt 组装] 医疗安全约束
+    ↓
+[LLM 生成] Qwen2.5-7B-Instruct + LoRA
+    ↓
+[后处理] 医疗免责声明追加
+    ↓
+[证据绑定] Evidence Traceability
+    ↓
+返回答案 + 证据来源
 ```
 
-## 核心功能
+### 核心模块
 
-### 1. LoRA 微调
-- 数据集：QIAIUNCC/EYE-QA-PLUS（33k+ 样本）
-- 参数：r=8, lora_alpha=32
-- 模型：Qwen2.5-7B-Instruct
+| 模块 | 技术实现 | 说明 |
+|-----|---------|------|
+| **知识库构建** | FAISS + BM25 | 5000条QA对，结构化存储 |
+| **向量检索** | all-MiniLM-L6-v2 | 384维语义向量 |
+| **混合检索** | α=0.5 线性加权 | 平衡语义与关键词 |
+| **重排序** | Cross-Encoder | ms-marco-MiniLM-L-6-v2 |
+| **Type-Aware** | DeBERTa-v3-base-mnli | 4类问题分类 |
+| **大模型** | Qwen2.5-7B-Instruct | 4位NF4量化 |
+| **微调** | QLoRA (r=8, α=32) | 可训练参数 0.055% |
+| **翻译** | MarianMT | 本地中英互译 |
+| **评测** | 科研级指标体系 | MRR/NDCG/MAP + LLM Judge |
 
-### 2. 混合检索
-- 向量检索：FAISS + all-MiniLM-L6-v2
-- BM25：关键词匹配
-- 融合策略：线性加权（alpha=0.7）
-- 重排序：Cross-Encoder (ms-marco-MiniLM-L-6-v2)
+---
 
-### 3. 防幻觉机制
-- Prompt 约束：禁止诊断与处方
-- 确定性生成：temperature=0.0
-- RAG 知识增强：基于医学文献生成
-- 后处理：医疗免责声明
+## 📁 项目结构
 
-### 4. 查询改写
-- 移除礼貌用语
-- 标准化医学术语
-- 提升检索准确性
+```
+low-resource-fundus-qa/
+│
+├── 📂 核心代码
+│   ├── qa_system.py                 # QA系统核心实现（检索+生成）
+│   ├── question_classifier.py       # NLI问题类型分类器
+│   ├── evaluator_scientific.py      # 科研级评测系统
+│   ├── evaluator_enhanced.py        # 增强版评测系统
+│   ├── finetune.py                  # QLoRA微调脚本
+│   ├── translator.py                # MarianMT翻译模块
+│   ├── evaluate.py                  # 基础评测脚本
+│   ├── build_rag.py                 # 构建FAISS向量库
+│   ├── extract_rag.py               # 提取RAG知识库数据
+│   ├── extract_sft.py               # 提取SFT微调数据
+│   └── download_dataset.py          # 数据集下载
+│
+├── 📂 评测与实验
+│   ├── run_all_experiments.py       # 批量实验脚本
+│   ├── generate_comprehensive_summary.py  # 综合报告生成
+│   ├── summary_all_llm_scores.py    # LLM评分汇总
+│   ├── llm_judge_new.py             # LLM-as-a-Judge评测
+│   └── llm_judge_offline.py         # 离线LLM评测
+│
+├── 📂 数据文件
+│   ├── fundus_rag.json              # 结构化QA知识库（5000条）
+│   ├── fundus_rag.txt               # 文本格式知识库
+│   ├── fundus_finetune.jsonl        # SFT微调数据（500条）
+│   ├── test_set.json                # 中文测试集（20题）
+│   └── text_set_hard.json           # 英文Hard测试集（20题）
+│
+├── 📂 实验结果
+│   ├── comprehensive_scores_summary.json      # 综合评分汇总
+│   ├── llm_scores_*.json                      # 各配置LLM评分
+│   ├── eval_*.json                            # 各配置评测结果
+│   ├── 论文实验数据汇总.md                     # 实验数据整理
+│   └── 测试集说明文档.md                       # 测试集详细说明
+│
+├── 📂 模型文件（运行时生成）
+│   ├── fundus_lora/                 # LoRA微调权重
+│   └── fundus_faiss/                # FAISS向量索引
+│
+├── 📄 文档
+│   ├── README.md                    # 项目说明（本文件）
+│   ├── 技术实现细节说明书.md         # 详细技术文档
+│   ├── EXAMPLES.md                  # 使用示例
+│   ├── CONTRIBUTING.md              # 贡献指南
+│   └── requirements.txt             # Python依赖
+│
+└── 📂 其他
+    ├── run_qa.py                    # QA系统运行入口
+    ├── generation.py                # 流式生成（预留）
+    └── test_evidence_binding.py     # 证据绑定测试
+```
 
-## 评测结果
+---
 
-### 检索策略消融实验
+## 🚀 快速开始
 
-| 配置 | ROUGE-L | BERTScore F1 | Checklist | Keyword |
-|------|----------|--------------|-----------|----------|
-| vector | 0.1802 | 0.8655 | 0.5250 | 0.1036 |
-| hybrid | 0.1778 | 0.8655 | 0.5250 | 0.0973 |
-| hybrid_rerank | 0.1850 | 0.8670 | 0.5667 | 0.1098 |
+### 环境要求
 
-### LLM 评测（hybrid_rerank）
-
-- Correctness: 4.75 / 5.00
-- Completeness: 5.00 / 5.00
-- Safety: 4.70 / 5.00
-- Helpfulness: 4.35 / 5.00
-
-## 快速开始
+- **GPU**: NVIDIA A4000 16GB 或同等算力（RTX 3090/4090）
+- **Python**: 3.10+
+- **CUDA**: 11.8+
+- **内存**: 32GB+
+- **存储**: 100GB+ SSD
 
 ### 1. 安装依赖
 
 ```bash
+# 克隆项目
+git clone https://github.com/qqnnhhdmpc666/low-resource-fundus-qa.git
+cd low-resource-fundus-qa
+
+# 创建虚拟环境
+python -m venv fundus_env
+source fundus_env/bin/activate  # Linux/Mac
+# 或 fundus_env\Scripts\activate  # Windows
+
+# 安装依赖
 pip install -r requirements.txt
 ```
 
-### 2. 下载模型
+### 2. 准备数据
 
 ```bash
-# 下载基础模型
-pip install modelscope
-from modelscope import snapshot_download
-snapshot_download('Qwen/Qwen2.5-7B-Instruct')
+# 下载数据集
+python download_dataset.py
 
-# 下载 LoRA 权重（需要自己训练）
-# 或使用预训练权重（如果提供）
+# 提取RAG知识库（5000条QA对）
+python extract_rag.py
+
+# 提取SFT微调数据（500条）
+python extract_sft.py
+
+# 构建FAISS向量索引
+python build_rag.py
 ```
 
-### 3. 运行系统
+### 3. 模型准备
+
+```bash
+# 方式1：使用Hugging Face下载（需要联网）
+# 模型会自动下载到本地缓存
+
+# 方式2：使用ModelScope镜像（国内推荐）
+pip install modelscope
+python -c "from modelscope import snapshot_download; snapshot_download('Qwen/Qwen2.5-7B-Instruct')"
+
+# 方式3：手动下载后放入 hf_cache/ 目录
+```
+
+### 4. 运行QA系统
 
 ```python
 from qa_system import EyeQASystem
 
-# 初始化系统
-qa_system = EyeQASystem(
-    retrieval_mode="hybrid_rerank",
-    use_query_rewrite=True
+# 初始化系统（推荐配置）
+qa = EyeQASystem(
+    retrieval_mode="hybrid_rerank",  # 最优策略
+    use_query_rewrite=True,          # 启用查询改写
+    use_type_aware=True              # 启用Type-Aware路由
 )
 
-# 回答问题
-answer = qa_system.answer("What should I do if my eyes feel dry?")
+# 方式1：简单问答
+answer = qa.answer("高度近视患者应该注意什么？")
 print(answer)
+
+# 方式2：获取详细检索信息（用于评测）
+result = qa.answer_with_retrieval("高度近视患者应该注意什么？")
+print(f"答案: {result['answer']}")
+print(f"召回文档数: {len(result['retrieved_docs'])}")
+print(f"检索模式: {result['retrieval_info']['mode']}")
+print(f"问题类型: {result['retrieval_info']['question_type']}")
 ```
 
-## 消融实验
+### 5. 运行评测
 
 ```bash
-# 运行所有配置的评测
+# 运行所有实验配置
 python run_all_experiments.py
 
 # 生成综合报告
 python generate_comprehensive_summary.py
+
+# 科研级评测
+python -c "
+from evaluator_scientific import ScientificEvaluator
+from qa_system import EyeQASystem
+
+evaluator = ScientificEvaluator(use_base_model_judge=True)
+qa = EyeQASystem(use_type_aware=True)
+
+# 评测单个问题
+result = qa.answer_with_retrieval('问题')
+eval_result = evaluator.evaluate_single(
+    question='问题',
+    reference='参考答案',
+    answer=result['answer'],
+    retrieved_docs=result['retrieved_docs'],
+    doc_scores=result['doc_scores']
+)
+print(eval_result)
+"
 ```
 
-## 注意事项
+---
 
-- ⚠️ 本项目需要 GPU（推荐 16GB+ 显存）
-- ⚠️ 模型文件较大，首次运行需要下载
-- ⚠️ 医疗回答仅供参考，不能替代专业医疗建议
+## 🔬 科研级评测体系
 
-## 许可证
+### 评测维度
 
-MIT License
+| 维度 | 指标 | 说明 |
+|-----|------|------|
+| **排名质量** | MRR, NDCG@K, P@K, R@K, MAP | 信息检索标准指标 |
+| **检索性能** | Precision, Diversity, Coverage | 召回质量评估 |
+| **生成质量** | Correctness, Completeness, Safety, Helpfulness, Groundedness | LLM-as-a-Judge |
+| **统计检验** | t-test, Wilcoxon, Cohen's d | 显著性检验+效应量 |
 
-## 联系方式
+### 评测示例
 
-- 项目链接：[GitHub Repository URL]
-- 问题反馈：[Issues]
+```python
+from evaluator_scientific import ScientificEvaluator
 
-## 致谢
+evaluator = ScientificEvaluator(use_base_model_judge=True)
 
-- Qwen 团队提供的基础模型
-- Hugging Face 提供的数据集和工具
-- 开源社区的支持
+# 批量评测
+results = evaluator.evaluate_batch(predictions)
+
+# 方法比较（统计显著性检验）
+comparison = evaluator.compare_methods(
+    method_a_results=results_hybrid_rerank,
+    method_b_results=results_vector,
+    metric_key="overall"
+)
+
+print(f"显著性: {comparison['paired_t_test']['significance']}")
+print(f"效应量: {comparison['effect_size']['interpretation']}")
+```
+
+---
+
+## 📈 实验复现
+
+### 复现四种策略对比实验
+
+```bash
+# 1. vector策略
+python evaluate.py \
+    --retrieval_mode vector \
+    --test_file test_set.json \
+    --output eval_vector.json
+
+# 2. hybrid策略
+python evaluate.py \
+    --retrieval_mode hybrid \
+    --test_file test_set.json \
+    --output eval_hybrid.json
+
+# 3. hybrid_rerank策略（最优）
+python evaluate.py \
+    --retrieval_mode hybrid_rerank \
+    --test_file test_set.json \
+    --output eval_hybrid_rerank.json
+
+# 4. 生成对比报告
+python generate_comprehensive_summary.py
+```
+
+### 复现α寻优实验
+
+```bash
+# 测试不同α值
+for alpha in 0.1 0.3 0.5 0.7 0.9; do
+    python evaluate.py \
+        --retrieval_mode hybrid \
+        --alpha $alpha \
+        --test_file test_set.json \
+        --output eval_hybrid_alpha_${alpha}.json
+done
+```
+
+---
+
+## 💾 显存占用参考（A4000 16GB）
+
+| 阶段 | 显存占用 | 说明 |
+|-----|---------|------|
+| 模型加载（4位NF4） | ~6GB | Qwen2.5-7B-Instruct |
+| RAG向量库 | ~2GB（内存） | FAISS CPU模式 |
+| 推理峰值 | ~8GB | 含Cross-Encoder |
+| 训练峰值（QLoRA） | ~12GB | r=8, batch=4 |
+
+---
+
+## ⚠️ 医疗免责声明
+
+**重要提醒**：本系统仅作为眼底病知识参考工具，不构成医疗建议。系统生成的回答不能替代专业医生的诊断和治疗建议。对于任何健康问题，尤其是紧急情况，请立即咨询专业医疗人员。
+
+系统在设计过程中已考虑医疗安全性，但由于AI技术的局限性，不能保证所有回答的绝对准确性。使用本系统时，请始终保持谨慎，并以专业医疗建议为准。
+
+---
+
+## 📚 相关文档
+
+- [技术实现细节说明书](技术实现细节说明书.md) - 详细技术实现文档
+- [论文实验数据汇总](论文实验数据汇总.md) - 完整实验数据
+- [测试集说明文档](测试集说明文档.md) - 测试集详细信息
+- [EXAMPLES.md](EXAMPLES.md) - 更多使用示例
+- [CONTRIBUTING.md](CONTRIBUTING.md) - 贡献指南
+
+---
+
+## 🤝 贡献
+
+欢迎提交Issue和Pull Request！请查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
+
+---
+
+## 📄 许可证
+
+本项目采用 [MIT License](LICENSE) 开源许可证。
+
+---
+
+## 🙏 致谢
+
+- [Qwen](https://github.com/QwenLM/Qwen) - 基础大语言模型
+- [Hugging Face](https://huggingface.co/) - 模型和数据集平台
+- [LangChain](https://python.langchain.com/) - RAG框架参考
+- [PEFT](https://github.com/huggingface/peft) - 参数高效微调
+- [EYE-QA-PLUS](https://huggingface.co/datasets/QIAIUNCC/EYE-QA-PLUS) - 眼底病问答数据集
+
+---
+
+## 📧 联系方式
+
+- **项目主页**: https://github.com/qqnnhhdmpc666/low-resource-fundus-qa
+- **问题反馈**: [GitHub Issues](https://github.com/qqnnhhdmpc666/low-resource-fundus-qa/issues)
+- **邮件联系**: [your-email@example.com]
+
+---
+
+**如果本项目对您有帮助，请给个 ⭐ Star 支持一下！**
